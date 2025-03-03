@@ -65,6 +65,7 @@ class LevelScreenState extends State<LevelScreen> {
   void _goToNextCard() {
     Duration duration = Duration(milliseconds: 150);
     isNextCard = false; // Set isNextCard to false initially
+    isCardFront = true;
     _loadAndPlayAudio(); // Play the audio
     _pageController.nextPage(
       duration: duration,
@@ -94,7 +95,7 @@ class LevelScreenState extends State<LevelScreen> {
                 definition: _selectedDefinition,
                 generation: _selectedGeneration,
                 onFlip: (isFront) {
-                  print('isFront =  $isFront');
+                  // print('isFront =  $isFront');
                   setState(() {
                     isCardFront = isFront; // Update the state in LevelScreenState
                   });

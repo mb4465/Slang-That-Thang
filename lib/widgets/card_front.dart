@@ -12,12 +12,17 @@ class CardFront extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          Center(
-            child: Text(
-              term, // Use the passed text
-              style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 30),
+            child: Center(
+              child: Text(
+                // 'this is supposed to be a very long text',
+                term, // Use the passed text
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
