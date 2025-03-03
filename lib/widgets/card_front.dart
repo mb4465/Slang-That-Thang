@@ -4,7 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart'; // Import flutter_svg
 class CardFront extends StatelessWidget {
   final String term; // Add a parameter for the text
 
-  const CardFront({Key? key, required this.term}) : super(key: key); // Make the text required
+  const CardFront({super.key, required this.term}); // Make the text required
 
   @override
   Widget build(BuildContext context) {

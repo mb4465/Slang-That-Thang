@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:math' as math; // Import for math functions
+// Import for math functions
 import '../screens/GenerationalCardScreen.dart';
 import 'AboutScreen.dart';
 import 'SettingsScreen.dart';
 import 'level_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -98,13 +98,13 @@ class ParallelogramButton extends StatelessWidget {
   final double skewAngle;
 
   const ParallelogramButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.onPressed,
     required this.width,
     required this.height,
     required this.skewAngle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +139,7 @@ class ParallelogramButton extends StatelessWidget {
 }
 
 class MenuScreen extends StatelessWidget {
-  const MenuScreen({Key? key}) : super(key: key);
+  const MenuScreen({super.key});
 
   static const buttonWidth = 250.0;
   static const buttonHeight = 50.0;

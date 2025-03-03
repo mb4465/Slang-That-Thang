@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:audioplayers/audioplayers.dart'; // Add this import
 import 'package:test2/widgets/card_back.dart';
 import 'package:test2/widgets/card_front.dart';

@@ -4,11 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:test2/data/terms_data.dart';
 import 'package:test2/data/icon_mapping.dart';
 import 'package:test2/widgets/flip_card_widget.dart';
-import 'package:test2/widgets/card_front.dart'; //Import CardFront
-import 'package:test2/widgets/card_back.dart';
 
 class LevelScreen extends StatefulWidget {
-  const LevelScreen({Key? key}) : super(key: key);
+  const LevelScreen({super.key});
 
   @override
   LevelScreenState createState() => LevelScreenState();
@@ -16,12 +14,13 @@ class LevelScreen extends StatefulWidget {
 
 class LevelScreenState extends State<LevelScreen> {
   final Random _random = Random();
+  final PageController _pageController = PageController();
   final AudioPlayer _audioPlayer = AudioPlayer();
   late String _selectedGeneration;
   late String _selectedTerm;
   late String _selectedDefinition;
   late IconData _selectedIcon;
-  int _currentIndex = 0;
+  bool isNextCard = true; // can the user go to the next card? to fix audio sync
 
   @override
   void initState() {
@@ -31,6 +30,7 @@ class LevelScreenState extends State<LevelScreen> {
 
   @override
   void dispose() {
+    _pageController.dispose();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -51,46 +51,55 @@ class LevelScreenState extends State<LevelScreen> {
   }
 
   Future<void> _loadAndPlayAudio() async {
+    // Stop any currently playing audio
+    await _audioPlayer.stop();
+    // Play the new audio
     await _audioPlayer.play(AssetSource('audio/next_card.mp3'));
   }
 
+  void _onPageChanged(int index) async {
+    _getRandomTerm();
+  }
+//
   void _goToNextCard() {
-    setState(() {
-      _currentIndex = (_currentIndex + 1) % 100;
-      _getRandomTerm();
-      _loadAndPlayAudio();
+    Duration duration = Duration(milliseconds: 150);
+    isNextCard = false; // Set isNextCard to false initially
+    _loadAndPlayAudio(); // Play the audio
+    _pageController.nextPage(
+      duration: duration,
+      curve: Curves.easeInCubic,
+    );
+    // Set isNextCard to true after the duration
+    Future.delayed(duration + Duration(milliseconds: 250), () {
+      setState(() {
+        isNextCard = true;
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get the current card data
-    Widget currentCard = FlipCardWidget(
-      icon: _selectedIcon,
-      term: _selectedTerm,
-      definition: _selectedDefinition,
-      generation: _selectedGeneration,
-    );
-
-    // Determine if the front is currently visible
-    bool isCardFront = false;
-
-    if (currentCard is FlipCardWidget) {
-      isCardFront = currentCard.key == const ValueKey<bool>(true);
-    }
-
-    final arrowColor = isCardFront ? Colors.black : Colors.white;
-
     return Scaffold(
       body: Stack(
         children: [
-          currentCard, // Display the FlipCard
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            itemBuilder: (context, index) {
+              return FlipCardWidget(
+                icon: _selectedIcon,
+                term: _selectedTerm,
+                definition: _selectedDefinition,
+                generation: _selectedGeneration,
+              );
+            },
+          ),
           Positioned(
             top: 20,
             left: 20,
             child: SafeArea(
               child: IconButton(
-                icon: Icon(Icons.arrow_back, color: arrowColor),
+                icon: Icon(Icons.arrow_back, color: Colors.black),
                 onPressed: () {
                   Navigator.pop(context);
                 },
@@ -101,9 +110,11 @@ class LevelScreenState extends State<LevelScreen> {
             right: 20,
             top: MediaQuery.of(context).size.height / 2 - 20,
             child: IconButton(
-              icon: Icon(Icons.arrow_right, size: 40, color: arrowColor),
+              icon: Icon(Icons.arrow_right, size: 40, color: Colors.black),
               onPressed: () {
-                _goToNextCard();
+                if(isNextCard){
+                  _goToNextCard();
+                }
               },
             ),
           ),

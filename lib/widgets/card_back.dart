@@ -9,12 +9,12 @@ class CardBack extends StatelessWidget {
   final IconData icon;
 
   const CardBack({
-    Key? key,
+    super.key,
     required this.term,
     required this.definition,
     required this.icon,
     required this.generation,
-  }) : super(key: key);
+  });
 
   String addNewlineBeforeBracket(String input) {
     int bracketIndex = input.indexOf('(');
