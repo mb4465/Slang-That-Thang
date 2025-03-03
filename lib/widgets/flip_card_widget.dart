@@ -11,12 +11,14 @@ class FlipCardWidget extends StatefulWidget {
     required this.definition,
     required this.icon,
     required this.generation,
+    this.onFlip,
   });
 
   final IconData icon;
   final String generation;
   final String term; // Parameter for the term
   final String definition; // Parameter for the definition
+  final Function(bool isFront)? onFlip;
 
   @override
   FlipCardWidgetState createState() => FlipCardWidgetState();
@@ -48,7 +50,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
     setState(() {
       _isFront = !_isFront; // Update the card's side
     });
-
+    widget.onFlip?.call(_isFront);
     // Play the flip sound after the animation completes
     _playFlipSound();
 

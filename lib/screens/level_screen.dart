@@ -21,6 +21,7 @@ class LevelScreenState extends State<LevelScreen> {
   late String _selectedDefinition;
   late IconData _selectedIcon;
   bool isNextCard = true; // can the user go to the next card? to fix audio sync
+  bool isCardFront = true;
 
   @override
   void initState() {
@@ -70,7 +71,7 @@ class LevelScreenState extends State<LevelScreen> {
       curve: Curves.easeInCubic,
     );
     // Set isNextCard to true after the duration
-    Future.delayed(duration + Duration(milliseconds: 250), () {
+    Future.delayed(duration + Duration(milliseconds: 200), () {
       setState(() {
         isNextCard = true;
       });
@@ -84,6 +85,7 @@ class LevelScreenState extends State<LevelScreen> {
         children: [
           PageView.builder(
             controller: _pageController,
+            physics: NeverScrollableScrollPhysics(),
             onPageChanged: _onPageChanged,
             itemBuilder: (context, index) {
               return FlipCardWidget(
@@ -91,6 +93,12 @@ class LevelScreenState extends State<LevelScreen> {
                 term: _selectedTerm,
                 definition: _selectedDefinition,
                 generation: _selectedGeneration,
+                onFlip: (isFront) {
+                  print('isFront =  $isFront');
+                  setState(() {
+                    isCardFront = isFront; // Update the state in LevelScreenState
+                  });
+                },
               );
             },
           ),
@@ -99,7 +107,7 @@ class LevelScreenState extends State<LevelScreen> {
             left: 20,
             child: SafeArea(
               child: IconButton(
-                icon: Icon(Icons.arrow_back, color: Colors.black),
+                icon: Icon(Icons.arrow_back, color: isCardFront? Colors.black: Colors.white),
                 onPressed: () {
                   Navigator.pop(context);
                 },
@@ -110,7 +118,7 @@ class LevelScreenState extends State<LevelScreen> {
             right: 20,
             top: MediaQuery.of(context).size.height / 2 - 20,
             child: IconButton(
-              icon: Icon(Icons.arrow_right, size: 40, color: Colors.black),
+              icon: Icon(Icons.arrow_right, size: 40, color: isCardFront? Colors.black: Colors.white),
               onPressed: () {
                 if(isNextCard){
                   _goToNextCard();
