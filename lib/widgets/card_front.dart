@@ -1,0 +1,41 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart'; // Import flutter_svg
+
+class CardFront extends StatelessWidget {
+  final String term; // Add a parameter for the text
+
+  const CardFront({Key? key, required this.term}) : super(key: key); // Make the text required
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Center(
+            child: Text(
+              term, // Use the passed text
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          // Slang Icon at the bottom left
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: SvgPicture.asset(
+                'assets/images/slang-icon.svg', // Path to your SVG
+                height: 50, // Adjust size as needed
+                width: 50,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
