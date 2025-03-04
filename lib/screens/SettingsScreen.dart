@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../screens/AboutScreen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -9,7 +10,27 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _soundEnabled = true; // Example setting
+  bool _soundEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSoundSetting();
+  }
+
+  // Load sound setting from SharedPreferences
+  Future<void> _loadSoundSetting() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _soundEnabled = prefs.getBool('sound_enabled') ?? true; // Default to true
+    });
+  }
+
+  // Save sound setting to SharedPreferences
+  Future<void> _saveSoundSetting(bool value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('sound_enabled', value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,17 +46,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (bool value) {
               setState(() {
                 _soundEnabled = value;
-                // Logic to update sound settings goes here (e.g., save to shared preferences).
               });
+              _saveSoundSetting(value);
             },
           ),
           ListTile(
             title: Text("About"),
             onTap: () {
-              // Navigate to an "About" screen
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AboutScreen()), // Replace AboutScreen()
+                MaterialPageRoute(builder: (context) => AboutScreen()),
               );
             },
           ),

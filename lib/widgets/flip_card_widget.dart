@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
 import 'package:audioplayers/audioplayers.dart'; // Add this import
+import 'package:test2/data/globals.dart';
 import 'package:test2/widgets/card_back.dart';
 import 'package:test2/widgets/card_front.dart';
 
@@ -30,6 +31,16 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
   final _flipDuration = Duration(milliseconds: 400);
   bool _isFront = true; // Track the current side of the card
   bool _isFlipping = false; // Track whether the card is currently flipping
+  bool isSoundEnabled = true;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getSoundEnabled().then((value) {
+      isSoundEnabled = value;
+    });
+  }
 
   @override
   void dispose() {
@@ -53,8 +64,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
     });
     widget.onFlip?.call(_isFront);
     // Play the flip sound after the animation completes
-    _playFlipSound();
-
+    isSoundEnabled?_playFlipSound():null;
     // Wait for the flip animation to complete
     await Future.delayed(_flipDuration);
 

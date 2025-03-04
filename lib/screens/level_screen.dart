@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:test2/data/terms_data.dart';
-import 'package:test2/data/icon_mapping.dart';
+import 'package:test2/data/globals.dart';
 import 'package:test2/widgets/flip_card_widget.dart';
 
 class LevelScreen extends StatefulWidget {
@@ -22,11 +22,15 @@ class LevelScreenState extends State<LevelScreen> {
   late IconData _selectedIcon;
   bool isNextCard = true; // can the user go to the next card? to fix audio sync
   bool isCardFront = true;
+  bool isSoundEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _getRandomTerm();
+    getSoundEnabled().then((value) {
+      isSoundEnabled = value;
+    });
   }
 
   @override
@@ -67,7 +71,8 @@ class LevelScreenState extends State<LevelScreen> {
     Duration duration = Duration(milliseconds: 150);
     isNextCard = false; // Set isNextCard to false initially
     isCardFront = true;
-    _loadAndPlayAudio(); // Play the audio
+    // Play the audio
+    isSoundEnabled?_loadAndPlayAudio():null;
     _pageController.nextPage(
       duration: duration,
       curve: Curves.easeInCubic,
