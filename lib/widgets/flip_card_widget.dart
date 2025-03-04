@@ -11,9 +11,10 @@ class FlipCardWidget extends StatefulWidget {
     required this.definition,
     required this.icon,
     required this.generation,
+    required this.onNextButtonPressed ,
     this.onFlip,
   });
-
+  final VoidCallback onNextButtonPressed;
   final IconData icon;
   final String generation;
   final String term; // Parameter for the term
@@ -64,6 +65,30 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final double screenHeight = MediaQuery.of(context).size.height;
+    final nextButton = Transform(
+      transform: Matrix4.skewX(10),
+      alignment: Alignment.center,
+      child: SizedBox(
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _isFront?Colors.white:Colors.black,
+            foregroundColor: _isFront?Colors.black:Colors.white,
+            side: BorderSide(color: _isFront?Colors.black:Colors.white, width: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5),
+            ),
+          ),
+          onPressed: widget.onNextButtonPressed,
+          child: Transform(  // Counter-skew the text
+            transform: Matrix4.skewX(0.1),
+            alignment: Alignment.center,
+            child: Icon(Icons.arrow_forward,color:  _isFront?Colors.black:Colors.white,),
+          ),
+        ),
+      ),
+    );
+
+
 
     return GestureDetector(
       onTap: _handleFlip, // Flip the card on tap
@@ -79,9 +104,10 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
               axis: FlipAxis.vertical,
               controller: con,
               frontWidget: SizedBox(
+
                 width: screenWidth,
                 height: screenHeight,
-                child: CardFront(term: widget.term),
+                child: CardFront(term: widget.term,button: nextButton),
               ),
               backWidget: SizedBox(
                 width: screenWidth,
@@ -91,6 +117,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
                   term: widget.term,
                   definition: widget.definition,
                   generation: widget.generation,
+                  button:nextButton
                 ),
               ),
             ),

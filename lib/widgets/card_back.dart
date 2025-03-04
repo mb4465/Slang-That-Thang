@@ -7,6 +7,7 @@ class CardBack extends StatelessWidget {
   final String definition;
   final String generation;
   final IconData icon;
+  final Transform button;
 
   const CardBack({
     super.key,
@@ -14,6 +15,7 @@ class CardBack extends StatelessWidget {
     required this.definition,
     required this.icon,
     required this.generation,
+     required this.button,
   });
 
   String addNewlineBeforeBracket(String input) {
@@ -77,6 +79,13 @@ class CardBack extends StatelessWidget {
             ),
           ),
           // Slang Icon and Generation at the bottom left and right respectively
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+                padding: const EdgeInsets.only(bottom: 80.0),
+                child: button
+            ),
+          ),
           Align(
             alignment: Alignment.bottomLeft,
             child: Padding(

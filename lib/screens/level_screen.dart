@@ -63,6 +63,7 @@ class LevelScreenState extends State<LevelScreen> {
   }
 //
   void _goToNextCard() {
+
     Duration duration = Duration(milliseconds: 150);
     isNextCard = false; // Set isNextCard to false initially
     isCardFront = true;
@@ -90,6 +91,7 @@ class LevelScreenState extends State<LevelScreen> {
             onPageChanged: _onPageChanged,
             itemBuilder: (context, index) {
               return FlipCardWidget(
+                onNextButtonPressed: _goToNextCard,
                 icon: _selectedIcon,
                 term: _selectedTerm,
                 definition: _selectedDefinition,
@@ -115,18 +117,7 @@ class LevelScreenState extends State<LevelScreen> {
               ),
             ),
           ),
-          Positioned(
-            right: 20,
-            top: MediaQuery.of(context).size.height / 2 - 20,
-            child: IconButton(
-              icon: Icon(Icons.arrow_right, size: 40, color: isCardFront? Colors.black: Colors.white),
-              onPressed: () {
-                if(isNextCard){
-                  _goToNextCard();
-                }
-              },
-            ),
-          ),
+
         ],
       ),
     );

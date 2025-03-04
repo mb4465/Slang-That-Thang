@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; // Import flutter_svg
 
 class CardFront extends StatelessWidget {
+  final Transform button;
   final String term; // Add a parameter for the text
 
-  const CardFront({super.key, required this.term}); // Make the text required
+  const CardFront({super.key, required this.term, required this.button}); // Make the text required
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -15,17 +17,31 @@ class CardFront extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 30),
             child: Center(
-              child: Text(
-                // 'this is supposed to be a very long text',
-                term, // Use the passed text
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    // 'this is supposed to be a very long text',
+                    term, // Use the passed text
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+
+                ],
               ),
             ),
           ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 80.0),
+              child: button
+              ),
+            ),
           // Slang Icon at the bottom left
           Align(
             alignment: Alignment.bottomLeft,
@@ -39,6 +55,7 @@ class CardFront extends StatelessWidget {
               ),
             ),
           ),
+
         ],
       ),
     );
