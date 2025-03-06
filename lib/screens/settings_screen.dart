@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../screens/AboutScreen.dart';
+import '../screens/about_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  _SettingsScreenState createState() => _SettingsScreenState();
+  SettingsScreenState createState() => SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class SettingsScreenState extends State<SettingsScreen> {
   bool _soundEnabled = false;
+  bool _settingsLoaded = false; // Track if settings have been loaded
 
   @override
-  void initState() {
+  initState() {
     super.initState();
     _loadSoundSetting();
   }
@@ -22,8 +23,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadSoundSetting() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _soundEnabled = prefs.getBool('sound_enabled') ?? true; // Default to true
+      _soundEnabled = prefs.getBool('sound_enabled') ?? true;
+      _settingsLoaded = true; // Indicate that settings have been loaded
     });
+    await Future.delayed(Duration(seconds: 2));
+
   }
 
   // Save sound setting to SharedPreferences
@@ -36,12 +40,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Settings"),
+        title: const Text("Settings"),
       ),
-      body: ListView(
+      body: _settingsLoaded
+          ? ListView(
         children: <Widget>[
           SwitchListTile(
-            title: Text("Sound Effects"),
+            title: const Text("Sound Effects"),
             value: _soundEnabled,
             onChanged: (bool value) {
               setState(() {
@@ -51,7 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           ListTile(
-            title: Text("About"),
+            title: const Text("About"),
             onTap: () {
               Navigator.push(
                 context,
@@ -60,7 +65,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
         ],
-      ),
+      )
+          : const Center(child: CircularProgressIndicator()), // Show loader while settings load
     );
   }
 }

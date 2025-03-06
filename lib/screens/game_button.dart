@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class GameButton extends StatelessWidget { // Renamed to GameButton
@@ -10,14 +9,14 @@ class GameButton extends StatelessWidget { // Renamed to GameButton
   final bool isBold;
 
   const GameButton({ // Renamed constructor
-    Key? key,
+    super.key,
     required this.text,
     required this.onPressed,
     required this.width,
     required this.height,
     required this.skewAngle,
     this.isBold = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

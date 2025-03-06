@@ -1,14 +1,12 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'AboutScreen.dart';
-import 'GameButton.dart';
-import 'GenerationalCardScreen.dart';
-import 'HomeScreen.dart';
-import 'SettingsScreen.dart';
+import 'about_screen.dart';
+import 'game_button.dart';
+import 'generational_card_screen.dart';
+import 'settings_screen.dart';
 
 class MenuScreen extends StatelessWidget {
-  const MenuScreen({Key? key}) : super(key: key);
+  const MenuScreen({super.key});
 
   static const buttonWidth = 250.0;
   static const buttonHeight = 60.0; // Increased height
