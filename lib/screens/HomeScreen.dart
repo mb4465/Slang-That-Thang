@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 // Import for math functions
 import '../screens/GenerationalCardScreen.dart';
 import 'AboutScreen.dart';
+import 'GameButton.dart';
+import 'MenuScreen.dart';
 import 'SettingsScreen.dart';
 import 'level_screen.dart';
 
@@ -43,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Center(
             child: Column(
               children: [
-                ParallelogramButton(
+                GameButton(
                   text: "Start Game",
                   width: buttonWidth,
                   height: buttonHeight,
@@ -56,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                ParallelogramButton(
+                GameButton(
                   text: "Menu",
                   width: buttonWidth,
                   height: buttonHeight,
@@ -69,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                ParallelogramButton(
+                GameButton(
                   text: "Settings",
                   width: buttonWidth,
                   height: buttonHeight,
@@ -132,59 +134,6 @@ class ParallelogramButton extends StatelessWidget {
               style: const TextStyle(fontSize: 16),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class MenuScreen extends StatelessWidget {
-  const MenuScreen({super.key});
-
-  static const buttonWidth = 250.0;
-  static const buttonHeight = 50.0;
-  static const skewAngle = 0.15;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: const Text("Menu"),
-      ),
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ParallelogramButton(
-              text: "About",
-              width: buttonWidth,
-              height: buttonHeight,
-              skewAngle: skewAngle,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AboutScreen()),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            ParallelogramButton(
-              text: "Generational Card",
-              width: buttonWidth,
-              height: buttonHeight,
-              skewAngle: skewAngle,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const GenerationalCardScreen()),
-                );
-              },
-            ),
-          ],
         ),
       ),
     );
