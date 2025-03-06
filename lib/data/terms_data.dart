@@ -1,9 +1,6 @@
-const String babyBoomers = "Baby Boomers (1946-1964)";
-const String genX = "Generation X (1965-1980)";
-const String millennials = "Millennials (1981-1996)";
-const String silentGeneration = "Silent Generation (1928-1945)";
-const String genAlpha = "Generation Alpha (2013-present)";
-const String genZ = "Generation Z (1997-2012)";
+
+
+import 'package:test2/data/globals.dart';
 
 final Map<String, List<Map<String, String>>> termsData = {
   babyBoomers: [
