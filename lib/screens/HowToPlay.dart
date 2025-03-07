@@ -1,14 +1,14 @@
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-class AboutScreen extends StatefulWidget {
-  const AboutScreen({super.key});
+class Howtoplay extends StatefulWidget {
+  const Howtoplay({super.key});
 
   @override
-  State<AboutScreen> createState() => AboutScreenState();
+  State<Howtoplay> createState() => _AboutScreenState();
 }
 
-class AboutScreenState extends State<AboutScreen> {
+class _AboutScreenState extends State<Howtoplay> {
   int _currentImageIndex = 0;
   final List<String> _imagePaths = [
     'assets/images/about-1.svg',
