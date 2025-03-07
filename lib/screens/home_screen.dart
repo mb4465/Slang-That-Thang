@@ -32,12 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 40),
             Center(
               child: SvgPicture.asset(
-                'assets/images/slang-icon.svg',
-                height: 280,
-                width: 280,
+                'assets/images/main_icon_crop.svg',
+                height: 400,
+                width: 400,
               ),
             ),
-            const SizedBox(height: 88),
+            const SizedBox(height: 100),
             Center(
               child: Column(
                 children: [
@@ -67,19 +67,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: 16),
-                  GameButton( // Using GameButton
-                    text: "Settings",
-                    width: buttonWidth,
-                    height: buttonHeight,
-                    skewAngle: skewAngle,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => SettingsScreen()),
-                      );
-                    },
-                  ),
+                  // const SizedBox(height: 16),
+                  // GameButton( // Using GameButton
+                  //   text: "Settings",
+                  //   width: buttonWidth,
+                  //   height: buttonHeight,
+                  //   skewAngle: skewAngle,
+                  //   onPressed: () {
+                  //     Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(builder: (context) => SettingsScreen()),
+                  //     );
+                  //   },
+                  // ),
                 ],
               ),
             ),

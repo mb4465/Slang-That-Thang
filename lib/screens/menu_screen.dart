@@ -68,6 +68,20 @@ class MenuScreen extends StatelessWidget {
                     isBold: true,
                   ),
                   const SizedBox(height: 16),
+                  GameButton( // Using GameButton
+                    text: "Settings",
+                    width: buttonWidth,
+                    height: buttonHeight,
+                    skewAngle: skewAngle,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => SettingsScreen()),
+                      );
+                    },
+                    isBold: true,
+                  ),
+                  const SizedBox(height: 16),
                   GameButton(
                     text: "About",
                     width: buttonWidth,
