@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 // Import for math functions
-import '../screens/GenerationalCardScreen.dart';
-import 'AboutScreen.dart';
-import 'GameButton.dart';
-import 'MenuScreen.dart';
-import 'SettingsScreen.dart';
+import 'game_button.dart';
+import 'menu_screen.dart';
+import 'settings_screen.dart';
 import 'level_screen.dart';
 
 class HomeScreen extends StatefulWidget {

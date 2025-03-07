@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; // Import flutter_svg
-import '../screens/HomeScreen.dart';
+import 'package:test2/screens/test_screen.dart';
+import '../screens/home_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -37,7 +38,9 @@ class SplashScreenState extends State<SplashScreen> {
     Future.delayed(const Duration(seconds: 3), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
+        // MaterialPageRoute(builder: (context) => HomeScreen()),
+        MaterialPageRoute(builder: (context) => TestScreen()),
+
       );
     });
   }

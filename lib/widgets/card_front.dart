@@ -51,7 +51,7 @@ class CardFront extends StatelessWidget {
                 'assets/images/slang-icon.svg', // Path to your SVG
                 height: 50, // Adjust size as needed
                 width: 50,
-                color: Colors.black,
+                colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
               ),
             ),
           ),
