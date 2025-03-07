@@ -36,8 +36,14 @@ class CardBack extends StatelessWidget {
           Align(
             alignment: Alignment.topCenter,
             child: Padding(
-              padding: const EdgeInsets.only(top: 50.0),
-              child: image
+              padding: EdgeInsets.only(top: 80),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: 50,
+                  maxHeight: 50,
+                ),
+                child: image,
+              )
             ),
           ),
           Center(
