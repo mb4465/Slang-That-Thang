@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../screens/AboutScreen.dart';
@@ -41,7 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         children: <Widget>[
           SwitchListTile(
-            title: Text("Sound Effects"),
+            title: Text("Sound"),
             value: _soundEnabled,
             onChanged: (bool value) {
               setState(() {
