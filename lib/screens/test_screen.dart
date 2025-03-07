@@ -20,7 +20,7 @@ class TestScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(width: 10),
-                Icon(entry.value, size: 30),
+                Image.asset(entry.value),
               ],
             ),
           );

@@ -10,13 +10,13 @@ class FlipCardWidget extends StatefulWidget {
     super.key,
     required this.term,
     required this.definition,
-    required this.icon,
+    required this.image,
     required this.generation,
     required this.onNextButtonPressed ,
     this.onFlip,
   });
   final VoidCallback onNextButtonPressed;
-  final IconData icon;
+  final Image image;
   final String generation;
   final String term; // Parameter for the term
   final String definition; // Parameter for the definition
@@ -123,7 +123,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
                 width: screenWidth,
                 height: screenHeight,
                 child: CardBack(
-                  icon: widget.icon,
+                  image: widget.image,
                   term: widget.term,
                   definition: widget.definition,
                   generation: widget.generation,

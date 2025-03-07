@@ -19,7 +19,7 @@ class LevelScreenState extends State<LevelScreen> {
   late String _selectedGeneration;
   late String _selectedTerm;
   late String _selectedDefinition;
-  late IconData _selectedIcon;
+  late String _selectedIcon;
   bool isNextCard = true; // can the user go to the next card? to fix audio sync
   bool isCardFront = true;
   bool isSoundEnabled = true;
@@ -50,7 +50,7 @@ class LevelScreenState extends State<LevelScreen> {
       setState(() {
         _selectedTerm = randomTerm["term"]!;
         _selectedDefinition = randomTerm["definition"]!;
-        _selectedIcon = generationIcons[_selectedGeneration] ?? Icons.help_outline;
+        _selectedIcon = generationIcons[_selectedGeneration] ?? ''; // TODO  fix this maybe
       });
     }
   }
@@ -97,7 +97,7 @@ class LevelScreenState extends State<LevelScreen> {
             itemBuilder: (context, index) {
               return FlipCardWidget(
                 onNextButtonPressed: _goToNextCard,
-                icon: _selectedIcon,
+                image: Image.asset(_selectedIcon),
                 term: _selectedTerm,
                 definition: _selectedDefinition,
                 generation: _selectedGeneration,
