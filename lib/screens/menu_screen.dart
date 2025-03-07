@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:test2/screens/HowToPlay.dart';
 
-import 'about_screen.dart';
+import 'AboutScreen.dart';
 import 'game_button.dart';
 import 'generational_card_screen.dart';
 import 'settings_screen.dart';
