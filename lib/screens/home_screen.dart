@@ -17,7 +17,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _controller;
   late Animation<Offset> _positionAnimation;
   late Animation<double> _rotationAnimation;
-  late Animation<double> _scaleAnimation; // New Scale Animation
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _borderAnimation; // Border thickness animation
 
   @override
   void initState() {
@@ -45,11 +46,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     ));
 
     _scaleAnimation = Tween<double>(
-      begin: 0.4, // Start at half size
+      begin: 0.4, // Start at small size
       end: 1.0, // End at normal size
     ).animate(CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeIn, // Slight overshoot for natural feel
+      curve: Curves.easeIn, // Smooth arrival effect
+    ));
+
+    _borderAnimation = Tween<double>(
+      begin: 8.0, // Start with a thick border
+      end: 3.0, // Shrink to a subtle border
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut, // Smooth transition for a natural feel
     ));
 
     _controller.forward();
@@ -65,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        color: const Color(0xFFB68D40), // Background (table color)
+        color: Colors.white, // Background (table color)
         child: Center(
           child: AnimatedBuilder(
             animation: _controller,
@@ -74,74 +83,77 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 offset: _positionAnimation.value * MediaQuery.of(context).size.height / 3,
                 child: Transform.rotate(
                   angle: _rotationAnimation.value,
-                  child: Transform.scale( // Apply scaling
+                  child: Transform.scale(
                     scale: _scaleAnimation.value,
-                    child: child,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        border: Border.all(
+                          color: Colors.black,
+                          width: _borderAnimation.value, // Animated border thickness
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 15,
+                            spreadRadius: 5,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: child,
+                    ),
                   ),
                 ),
               );
             },
             child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: Colors.black26, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 15,
-                    spreadRadius: 5,
-                    offset: const Offset(0, 10),
+              decoration: const BoxDecoration(color: Colors.white),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  const SizedBox(height: 40),
+                  Center(
+                    child: SvgPicture.asset(
+                      'assets/images/main_icon_crop.svg',
+                      height: 400,
+                      width: 400,
+                    ),
+                  ),
+                  const SizedBox(height: 100),
+                  Center(
+                    child: Column(
+                      children: [
+                        GameButton(
+                          text: "Start Game",
+                          width: 250,
+                          height: 50,
+                          skewAngle: 0.15,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => LevelScreen()),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        GameButton(
+                          text: "Menu",
+                          width: 250,
+                          height: 50,
+                          skewAngle: 0.15,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const MenuScreen()),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-              ),
-              child: Container( // Keeps full-screen content inside
-                decoration: const BoxDecoration(color: Colors.white),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    const SizedBox(height: 40),
-                    Center(
-                      child: SvgPicture.asset(
-                        'assets/images/main_icon_crop.svg',
-                        height: 400,
-                        width: 400,
-                      ),
-                    ),
-                    const SizedBox(height: 100),
-                    Center(
-                      child: Column(
-                        children: [
-                          GameButton(
-                            text: "Start Game",
-                            width: 250,
-                            height: 50,
-                            skewAngle: 0.15,
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => LevelScreen()),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          GameButton(
-                            text: "Menu",
-                            width: 250,
-                            height: 50,
-                            skewAngle: 0.15,
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const MenuScreen()),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
