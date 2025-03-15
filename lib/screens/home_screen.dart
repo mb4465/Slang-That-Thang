@@ -13,18 +13,56 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+class _HomeScreenState extends State<HomeScreen>
+    with TickerProviderStateMixin {
+  static const buttonWidth = 250.0;
+  static const buttonHeight = 50.0;
+  static const skewAngle = 0.15;
+
+  late AnimationController _screenController;
+  late AnimationController _buttonController;
+  late List<Animation<Offset>> _buttonAnimations;
+  bool _isAnimating = false;
+
   late Animation<Offset> _positionAnimation;
   late Animation<double> _rotationAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _borderAnimation; // Border thickness animation
 
+
   @override
   void initState() {
     super.initState();
+    _buttonController = AnimationController(
+      duration: const Duration(milliseconds: 625), // adjust the duration according to number of button
+      vsync: this,
+    );
 
-    _controller = AnimationController(
+    // Create 2 staggered animations for the buttons.
+    _buttonAnimations = List.generate(2, (i) {
+      double start = 0.0;
+      double end = 0.5;
+
+      // for the first button, set the default value
+      if (i == 0) {
+        start = i * 0.5;
+        end = start + 0.5;
+      } else {
+        // other than first button, overlap is needed
+        start = (i - 1) * 0.5 + 0.25; // Start halfway through the previous button's animation
+        end = start + 0.5;
+      }
+      return Tween<Offset>(
+        begin: Offset.zero,
+        end: const Offset(2.0, 0.0), // Adjust the offset as needed
+      ).animate(
+        CurvedAnimation(
+          parent: _buttonController,
+          curve: Interval(start, end, curve: Curves.easeInOut),
+        ),
+      );
+    });
+    _screenController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
     );
@@ -33,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       begin: const Offset(0, 2),
       end: const Offset(0, 0),
     ).animate(CurvedAnimation(
-      parent: _controller,
+      parent: _screenController,
       curve: Curves.decelerate,
     ));
 
@@ -41,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       begin: 5 * pi,
       end: 0,
     ).animate(CurvedAnimation(
-      parent: _controller,
+      parent: _screenController,
       curve: Curves.decelerate,
     ));
 
@@ -49,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       begin: 0.4, // Start at small size
       end: 1.0, // End at normal size
     ).animate(CurvedAnimation(
-      parent: _controller,
+      parent: _screenController,
       curve: Curves.easeIn, // Smooth arrival effect
     ));
 
@@ -57,19 +95,43 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       begin: 8.0, // Start with a thick border
       end: 3.0, // Shrink to a subtle border
     ).animate(CurvedAnimation(
-      parent: _controller,
+      parent: _screenController,
       curve: Curves.easeOut, // Smooth transition for a natural feel
     ));
 
-    _controller.forward();
+    _screenController.forward();
   }
-
   @override
   void dispose() {
-    _controller.dispose();
+    _screenController.dispose();
+    _buttonController.dispose();
     super.dispose();
   }
+  void _animateButtonsAndNavigate(VoidCallback navigate) {
+    if (_isAnimating) return;
+    setState(() {
+      _isAnimating = true;
+    });
+    _buttonController.forward().then((_) {
+      navigate();
+    });
+  }
 
+
+  Widget _buildAnimatedButton(String text, VoidCallback onPressed, int index) {
+    return SlideTransition(
+      position: _buttonAnimations[index],
+      child: GameButton(
+        text: text,
+        width: buttonWidth,
+        height: buttonHeight,
+        skewAngle: skewAngle,
+        // Disable button presses while animating
+        onPressed: _isAnimating ? () {} : onPressed,
+        isBold: true,
+      ),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         color: Colors.white, // Background (table color)
         child: Center(
           child: AnimatedBuilder(
-            animation: _controller,
+            animation: _screenController,
             builder: (context, child) {
               return Transform.translate(
                 offset: _positionAnimation.value * MediaQuery.of(context).size.height / 3,
@@ -125,31 +187,34 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   Center(
                     child: Column(
                       children: [
-                        GameButton(
-                          text: "Start Game",
-                          width: 250,
-                          height: 50,
-                          skewAngle: 0.15,
-                          onPressed: () {
+                        _buildAnimatedButton("Start Game", () {
+                          _animateButtonsAndNavigate(() {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => LevelScreen()),
-                            );
-                          },
-                        ),
+                            ).then((_) {
+                              // Reset the animation when returning to the menu
+                              _buttonController.reset();
+                              setState(() {
+                                _isAnimating = false;
+                              });
+                            });
+                          });
+                        }, 0),
                         const SizedBox(height: 16),
-                        GameButton(
-                          text: "Menu",
-                          width: 250,
-                          height: 50,
-                          skewAngle: 0.15,
-                          onPressed: () {
+                        _buildAnimatedButton("Menu", () {
+                          _animateButtonsAndNavigate(() {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => const MenuScreen()),
-                            );
-                          },
-                        ),
+                            ).then((_) {
+                              _buttonController.reset();
+                              setState(() {
+                                _isAnimating = false;
+                              });
+                            });
+                          });
+                        }, 1),
                       ],
                     ),
                   ),
