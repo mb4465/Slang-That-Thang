@@ -12,7 +12,7 @@ class LevelScreen extends StatefulWidget {
   LevelScreenState createState() => LevelScreenState();
 }
 
-class LevelScreenState extends State<LevelScreen> {
+class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin {
   final Random _random = Random();
   final PageController _pageController = PageController();
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -20,9 +20,12 @@ class LevelScreenState extends State<LevelScreen> {
   late String _selectedTerm;
   late String _selectedDefinition;
   late String _selectedIcon;
-  bool isNextCard = true; // can the user go to the next card? to fix audio sync
+  bool isNextCard = true;
   bool isCardFront = true;
   bool isSoundEnabled = true;
+  late AnimationController _cardAnimationController;
+  late Animation<double> _rotationAnimation;
+  late Animation<Offset> _offsetAnimation;
 
   @override
   void initState() {
@@ -31,12 +34,34 @@ class LevelScreenState extends State<LevelScreen> {
     getSoundEnabled().then((value) {
       isSoundEnabled = value;
     });
+
+    _cardAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    _rotationAnimation = Tween<double>(
+      begin: 0,
+      end: pi / 2,
+    ).animate(CurvedAnimation(
+      parent: _cardAnimationController,
+      curve: Curves.easeInBack,
+    ));
+
+    _offsetAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(2.0, 0.0),
+    ).animate(CurvedAnimation(
+      parent: _cardAnimationController,
+      curve: Curves.easeIn,
+    ));
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     _audioPlayer.dispose();
+    _cardAnimationController.dispose();
     super.dispose();
   }
 
@@ -50,39 +75,57 @@ class LevelScreenState extends State<LevelScreen> {
       setState(() {
         _selectedTerm = randomTerm["term"]!;
         _selectedDefinition = randomTerm["definition"]!;
-        _selectedIcon = generationIcons[_selectedGeneration] ?? ''; // TODO  fix this maybe
+        _selectedIcon = generationIcons[_selectedGeneration] ?? '';
       });
     }
   }
 
   Future<void> _loadAndPlayAudio() async {
-    // Stop any currently playing audio
     await _audioPlayer.stop();
-    // Play the new audio
     await _audioPlayer.play(AssetSource('audio/next_card.mp3'));
   }
 
   void _onPageChanged(int index) async {
     _getRandomTerm();
   }
-//
-  void _goToNextCard() {
 
-    Duration duration = Duration(milliseconds: 150);
-    isNextCard = false; // Set isNextCard to false initially
-    isCardFront = true;
-    // Play the audio
-    isSoundEnabled?_loadAndPlayAudio():null;
-    _pageController.nextPage(
-      duration: duration,
-      curve: Curves.easeInCubic,
-    );
-    // Set isNextCard to true after the duration
-    Future.delayed(duration + Duration(milliseconds: 200), () {
-      setState(() {
-        isNextCard = true;
+  void _goToNextCard() {
+    if (!isNextCard) return;
+
+    setState(() {
+      isNextCard = false;
+      isCardFront = true;
+    });
+
+    if (isSoundEnabled) _loadAndPlayAudio();
+
+    _cardAnimationController.forward().then((_) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 1),
+        curve: Curves.linear,
+      ).then((_) {
+        _cardAnimationController.reset();
+        setState(() => isNextCard = true);
       });
     });
+  }
+
+  Widget _buildAnimatedCard(Widget child) {
+    return AnimatedBuilder(
+      animation: _cardAnimationController,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: _offsetAnimation.value * MediaQuery.of(context).size.width,
+          child: Transform(
+            transform: Matrix4.rotationY(_rotationAnimation.value)
+              ..setEntry(3, 2, 0.001),
+            alignment: Alignment.center,
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
   }
 
   @override
@@ -92,21 +135,20 @@ class LevelScreenState extends State<LevelScreen> {
         children: [
           PageView.builder(
             controller: _pageController,
-            physics: NeverScrollableScrollPhysics(),
+            physics: const NeverScrollableScrollPhysics(),
             onPageChanged: _onPageChanged,
             itemBuilder: (context, index) {
-              return FlipCardWidget(
-                onNextButtonPressed: _goToNextCard,
-                image: Image.asset(_selectedIcon),
-                term: _selectedTerm,
-                definition: _selectedDefinition,
-                generation: _selectedGeneration,
-                onFlip: (isFront) {
-                  // print('isFront =  $isFront');
-                  setState(() {
-                    isCardFront = isFront; // Update the state in LevelScreenState
-                  });
-                },
+              return _buildAnimatedCard(
+                FlipCardWidget(
+                  onNextButtonPressed: _goToNextCard,
+                  image: Image.asset(_selectedIcon),
+                  term: _selectedTerm,
+                  definition: _selectedDefinition,
+                  generation: _selectedGeneration,
+                  onFlip: (isFront) {
+                    setState(() => isCardFront = isFront);
+                  },
+                ),
               );
             },
           ),
@@ -115,14 +157,12 @@ class LevelScreenState extends State<LevelScreen> {
             left: 20,
             child: SafeArea(
               child: IconButton(
-                icon: Icon(Icons.arrow_back, color: isCardFront? Colors.black: Colors.white),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                icon: Icon(Icons.arrow_back,
+                    color: isCardFront ? Colors.black : Colors.white),
+                onPressed: () => Navigator.pop(context),
               ),
             ),
           ),
-
         ],
       ),
     );
