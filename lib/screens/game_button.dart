@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class GameButton extends StatelessWidget { // Renamed to GameButton
+class GameButton extends StatefulWidget {
   final String text;
   final VoidCallback onPressed;
   final double width;
@@ -8,7 +8,7 @@ class GameButton extends StatelessWidget { // Renamed to GameButton
   final double skewAngle;
   final bool isBold;
 
-  const GameButton({ // Renamed constructor
+  const GameButton({
     super.key,
     required this.text,
     required this.onPressed,
@@ -19,32 +19,76 @@ class GameButton extends StatelessWidget { // Renamed to GameButton
   });
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      height: height,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white, // White background
-          foregroundColor: Colors.black, // Black text
-          elevation: 8, // Add a shadow for depth
-          shadowColor: Colors.grey.shade700, // Shadow color (dark grey)
-          side: BorderSide(color: Colors.black, width: 2), // Black border
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10), // More rounded corners
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), // More padding
-        ),
-        onPressed: onPressed,
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 18, // Slightly larger text
-            fontWeight: isBold ? FontWeight.w900 : FontWeight.bold, // Use w900 for extra boldness
-            letterSpacing: 1.2, // Add letter spacing
-          ),
-        ),
+  GameButtonState createState() => GameButtonState();
+}
+
+class GameButtonState extends State<GameButton> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize the animation controller
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    // Create a scale animation that pulsates between 1.0 and 1.05
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
       ),
+    );
+
+    // Repeat the animation indefinitely
+    _controller.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: SizedBox(
+            width: widget.width,
+            height: widget.height,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                elevation: 8,
+                shadowColor: Colors.grey.shade700,
+                side: const BorderSide(color: Colors.black, width: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              onPressed: widget.onPressed,
+              child: Text(
+                widget.text,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: widget.isBold ? FontWeight.w900 : FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
