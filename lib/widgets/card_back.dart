@@ -39,8 +39,8 @@ class CardBack extends StatelessWidget {
               padding: EdgeInsets.only(top: 80),
               child: Container(
                 constraints: BoxConstraints(
-                  maxWidth: 50,
-                  maxHeight: 50,
+                  maxWidth: 35,
+                  maxHeight: 35,
                 ),
                 child: image,
               )

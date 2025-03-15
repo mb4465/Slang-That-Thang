@@ -1,6 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:math';
 import 'game_button.dart';
 import 'menu_screen.dart';
 import 'settings_screen.dart';
