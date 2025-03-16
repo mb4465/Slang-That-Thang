@@ -46,6 +46,7 @@ dependencies:
   just_audio: ^0.9.33
   animated_text_kit: ^4.2.2
 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -107,3 +108,5 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+
