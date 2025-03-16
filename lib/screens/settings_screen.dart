@@ -25,8 +25,7 @@ class SettingsScreenState extends State<SettingsScreen> {
       _soundEnabled = prefs.getBool('sound_enabled') ?? true;
       _settingsLoaded = true; // Indicate that settings have been loaded
     });
-    await Future.delayed(Duration(seconds: 2));
-
+    await Future.delayed(const Duration(seconds: 2));
   }
 
   // Save sound setting to SharedPreferences
@@ -45,7 +44,14 @@ class SettingsScreenState extends State<SettingsScreen> {
           ? ListView(
         children: <Widget>[
           SwitchListTile(
-            title: const Text("Sound"),
+            title: Text(
+              "Sound",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18, // You can adjust the font size as needed
+                color: Theme.of(context).textTheme.bodyLarge?.color, // Inherit text color or specify one
+              ),
+            ),
             value: _soundEnabled,
             onChanged: (bool value) {
               setState(() {
@@ -53,21 +59,11 @@ class SettingsScreenState extends State<SettingsScreen> {
               });
               _saveSoundSetting(value);
             },
-            activeColor: Colors.black, // Set active color to white
-            activeTrackColor: Colors.grey.shade300, // Set active track color (light grey for boundary effect)
-            inactiveThumbColor: Colors.white, //Set inactive thumb color
+            activeColor: Colors.black,
+            activeTrackColor: Colors.grey.shade300,
+            inactiveThumbColor: Colors.white,
             inactiveTrackColor: Colors.grey.shade300,
-
           ),
-          // ListTile(
-          //   title: const Text("About"),
-          //   onTap: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(builder: (context) => AboutScreen()),
-          //     );
-          //   },
-          // ),
         ],
       )
           : const Center(child: CircularProgressIndicator()), // Show loader while settings load

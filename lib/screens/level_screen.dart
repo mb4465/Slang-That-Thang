@@ -24,8 +24,6 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
   bool isCardFront = true;
   bool isSoundEnabled = true;
   late AnimationController _cardAnimationController;
-  late Animation<double> _rotationAnimation;
-  late Animation<Offset> _offsetAnimation;
 
   @override
   void initState() {
@@ -39,22 +37,6 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-
-    _rotationAnimation = Tween<double>(
-      begin: 0,
-      end: pi / 2,
-    ).animate(CurvedAnimation(
-      parent: _cardAnimationController,
-      curve: Curves.easeInBack,
-    ));
-
-    _offsetAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(2.0, 0.0),
-    ).animate(CurvedAnimation(
-      parent: _cardAnimationController,
-      curve: Curves.easeIn,
-    ));
   }
 
   @override
@@ -114,14 +96,44 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
     return AnimatedBuilder(
       animation: _cardAnimationController,
       builder: (context, child) {
-        return Transform.translate(
-          offset: _offsetAnimation.value * MediaQuery.of(context).size.width,
-          child: Transform(
-            transform: Matrix4.rotationY(_rotationAnimation.value)
-              ..setEntry(3, 2, 0.001),
-            alignment: Alignment.center,
-            child: child,
-          ),
+        return Stack(
+          children: [
+            // Next Card Entrance
+            Positioned.fill(
+              child: FadeTransition(
+                opacity: Tween<double>(begin: 0.0, end: 1.0)
+                    .animate(_cardAnimationController),
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.0, 1.0),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: _cardAnimationController,
+                    curve: Curves.easeInOut,
+                  )),
+                  child: child,
+                ),
+              ),
+            ),
+
+            // Current Card Exit
+            Positioned.fill(
+              child: FadeTransition(
+                opacity: Tween<double>(begin: 1.0, end: 0.0)
+                    .animate(_cardAnimationController),
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: Offset.zero,
+                    end: const Offset(0.0, -0.5),
+                  ).animate(CurvedAnimation(
+                    parent: _cardAnimationController,
+                    curve: Curves.easeInOut,
+                  )),
+                  child: child,
+                ),
+              ),
+            ),
+          ],
         );
       },
       child: child,

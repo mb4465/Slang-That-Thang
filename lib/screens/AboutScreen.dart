@@ -77,7 +77,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                     const SizedBox(height: 32),
                     const Text(
-                      '© 2024 Your Company Name. All rights reserved.',
+                      '© 2024 Callidora Global Media. All rights reserved.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
