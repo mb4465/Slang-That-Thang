@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart'; // Import flutter_svg
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:test2/screens/home_screen.dart';
 import 'package:test2/screens/test_screen.dart';
 
@@ -18,7 +19,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: SplashScreen(), // Show SplashScreen first
+      home: SplashScreen(),
     );
   }
 }
@@ -34,12 +35,10 @@ class SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Delay navigation to HomeScreen after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 7), () {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomeScreen()),
-        // MaterialPageRoute(builder: (context) => TestScreen()),
       );
     });
   }
@@ -47,13 +46,55 @@ class SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SvgPicture.asset(
-          'assets/images/splash-screen.svg', // Replace with the correct path to your SVG file
-          fit: BoxFit.cover, // Cover the entire screen
-          width: double.infinity,
-          height: double.infinity,
-        ),
+      backgroundColor: Colors.white,
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: SvgPicture.asset(
+                'assets/images/company-logo.svg',
+                fit: BoxFit.contain,
+                width: MediaQuery.of(context).size.width * 0.8,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Column( // Changed Center to Column to stack the texts
+              mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+              children: [
+                Text(
+                  'Powered by',
+                  textAlign: TextAlign.center, // Center horizontally
+                  style: const TextStyle(
+                    fontSize: 16.0,
+                    fontWeight: FontWeight.normal,
+                    color: Colors.black, // Set "Powered by" to black
+                  ),
+                ),
+                AnimatedTextKit(
+                  animatedTexts: [
+                    TypewriterAnimatedText(
+                      'Callidora Global Media',
+                      textStyle: const TextStyle(
+                        fontSize: 22.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                      speed: const Duration(milliseconds: 150),
+                    ),
+                  ],
+                  totalRepeatCount: 1,
+                  pause: const Duration(milliseconds: 1000),
+                  displayFullTextOnTap: true,
+                  stopPauseOnTap: true,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

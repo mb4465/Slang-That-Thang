@@ -41,8 +41,10 @@ dependencies:
   flutter_native_splash: ^2.4.5
   font_awesome_flutter: ^10.8.0
   flutter_flip_card: ^0.0.6
-  audioplayers: ^6.2.0
+  audioplayers: ^6.4.0
   package_info_plus: ^8.3.0
+  just_audio: ^0.9.33
+  animated_text_kit: ^4.2.2
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +75,8 @@ flutter:
     - assets/images/generations/
     - assets/audio/card_flip.mp3
     - assets/audio/next_card.mp3
+    - assets/audio/click.mp3
+    - assets/audio/click_sound.mp3
 
   # assets:
   #   - images/a_dot_burr.jpeg

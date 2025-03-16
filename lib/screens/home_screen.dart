@@ -1,11 +1,12 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'game_button.dart';
 import 'menu_screen.dart';
 import 'settings_screen.dart';
 import 'level_screen.dart';
+import 'package:test2/data/globals.dart'; // Assumes getSoundEnabled() is defined here
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,8 +15,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   static const buttonWidth = 250.0;
   static const buttonHeight = 50.0;
   static const skewAngle = 0.15;
@@ -28,14 +28,13 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<Offset> _positionAnimation;
   late Animation<double> _rotationAnimation;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _borderAnimation; // Border thickness animation
-
+  late Animation<double> _borderAnimation; // Animated border thickness
 
   @override
   void initState() {
     super.initState();
     _buttonController = AnimationController(
-      duration: const Duration(milliseconds: 625), // adjust the duration according to number of button
+      duration: const Duration(milliseconds: 625),
       vsync: this,
     );
 
@@ -43,19 +42,17 @@ class _HomeScreenState extends State<HomeScreen>
     _buttonAnimations = List.generate(2, (i) {
       double start = 0.0;
       double end = 0.5;
-
-      // for the first button, set the default value
       if (i == 0) {
         start = i * 0.5;
         end = start + 0.5;
       } else {
-        // other than first button, overlap is needed
-        start = (i - 1) * 0.5 + 0.25; // Start halfway through the previous button's animation
+        // Overlap the second button's animation halfway through the first.
+        start = (i - 1) * 0.5 + 0.25;
         end = start + 0.5;
       }
       return Tween<Offset>(
         begin: Offset.zero,
-        end: const Offset(2.0, 0.0), // Adjust the offset as needed
+        end: const Offset(2.0, 0.0), // Adjust as needed.
       ).animate(
         CurvedAnimation(
           parent: _buttonController,
@@ -63,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       );
     });
+
     _screenController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
@@ -85,29 +83,32 @@ class _HomeScreenState extends State<HomeScreen>
     ));
 
     _scaleAnimation = Tween<double>(
-      begin: 0.4, // Start at small size
-      end: 1.0, // End at normal size
+      begin: 0.4,
+      end: 1.0,
     ).animate(CurvedAnimation(
       parent: _screenController,
-      curve: Curves.easeIn, // Smooth arrival effect
+      curve: Curves.easeIn,
     ));
 
     _borderAnimation = Tween<double>(
-      begin: 8.0, // Start with a thick border
-      end: 3.0, // Shrink to a subtle border
+      begin: 8.0,
+      end: 3.0,
     ).animate(CurvedAnimation(
       parent: _screenController,
-      curve: Curves.easeOut, // Smooth transition for a natural feel
+      curve: Curves.easeOut,
     ));
 
     _screenController.forward();
   }
+
   @override
   void dispose() {
     _screenController.dispose();
     _buttonController.dispose();
     super.dispose();
   }
+
+  // Animate buttons and then navigate.
   void _animateButtonsAndNavigate(VoidCallback navigate) {
     if (_isAnimating) return;
     setState(() {
@@ -118,6 +119,22 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
+  // Create a new AudioPlayer instance each time to reliably play the click sound.
+  Future<void> _loadAndPlayClickSound() async {
+    final player = AudioPlayer();
+    // Set release mode to stop to avoid looping.
+    await player.setReleaseMode(ReleaseMode.stop);
+    await player.play(AssetSource('audio/click.mp3'));
+  }
+
+  // Check if sound is enabled; if so, play the click sound, then animate and navigate.
+  void _onHomeButtonPressed(VoidCallback navigate) async {
+    bool shouldPlaySound = await getSoundEnabled();
+    if (shouldPlaySound) {
+      await _loadAndPlayClickSound();
+    }
+    _animateButtonsAndNavigate(navigate);
+  }
 
   Widget _buildAnimatedButton(String text, VoidCallback onPressed, int index) {
     return SlideTransition(
@@ -127,17 +144,18 @@ class _HomeScreenState extends State<HomeScreen>
         width: buttonWidth,
         height: buttonHeight,
         skewAngle: skewAngle,
-        // Disable button presses while animating
+        // Disable button presses while animating.
         onPressed: _isAnimating ? () {} : onPressed,
         isBold: true,
       ),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        color: Colors.white, // Background (table color)
+        color: Colors.white, // Background color.
         child: Center(
           child: AnimatedBuilder(
             animation: _screenController,
@@ -153,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen>
                         color: Colors.black,
                         border: Border.all(
                           color: Colors.black,
-                          width: _borderAnimation.value, // Animated border thickness
+                          width: _borderAnimation.value,
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -189,12 +207,11 @@ class _HomeScreenState extends State<HomeScreen>
                     child: Column(
                       children: [
                         _buildAnimatedButton("Start Game", () {
-                          _animateButtonsAndNavigate(() {
+                          _onHomeButtonPressed(() {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => LevelScreen()),
                             ).then((_) {
-                              // Reset the animation when returning to the menu
                               _buttonController.reset();
                               setState(() {
                                 _isAnimating = false;
@@ -204,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen>
                         }, 0),
                         const SizedBox(height: 16),
                         _buildAnimatedButton("Menu", () {
-                          _animateButtonsAndNavigate(() {
+                          _onHomeButtonPressed(() {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => const MenuScreen()),
