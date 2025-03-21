@@ -12,9 +12,10 @@ class FlipCardWidget extends StatefulWidget {
     required this.definition,
     required this.image,
     required this.generation,
-    required this.onNextButtonPressed ,
+    required this.onNextButtonPressed,
     this.onFlip,
   });
+
   final VoidCallback onNextButtonPressed;
   final Image image;
   final String generation;
@@ -35,7 +36,6 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getSoundEnabled().then((value) {
       isSoundEnabled = value;
@@ -64,7 +64,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
     });
     widget.onFlip?.call(_isFront);
     // Play the flip sound after the animation completes
-    isSoundEnabled?_playFlipSound():null;
+    isSoundEnabled ? _playFlipSound() : null;
     // Wait for the flip animation to complete
     await Future.delayed(_flipDuration);
 
@@ -75,30 +75,29 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final double screenHeight = MediaQuery.of(context).size.height;
+
+    // Updated next button: wrapped in a Transform to match the required type
     final nextButton = Transform(
-      transform: Matrix4.skewX(10),
+      transform: Matrix4.identity(), // No skew transformation, just to match the expected type
       alignment: Alignment.center,
       child: SizedBox(
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: _isFront?Colors.white:Colors.black,
-            foregroundColor: _isFront?Colors.black:Colors.white,
-            side: BorderSide(color: _isFront?Colors.black:Colors.white, width: 2),
+            backgroundColor: _isFront ? Colors.white : Colors.black,
+            foregroundColor: _isFront ? Colors.black : Colors.white,
+            side: BorderSide(color: _isFront ? Colors.black : Colors.white, width: 2),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(5),
+              borderRadius: BorderRadius.circular(12), // Curved corners
             ),
           ),
           onPressed: widget.onNextButtonPressed,
-          child: Transform(  // Counter-skew the text
-            transform: Matrix4.skewX(0.1),
-            alignment: Alignment.center,
-            child: Icon(Icons.arrow_forward,color:  _isFront?Colors.black:Colors.white,),
+          child: Icon(
+            Icons.arrow_forward,
+            color: _isFront ? Colors.black : Colors.white,
           ),
         ),
       ),
     );
-
-
 
     return GestureDetector(
       onTap: _handleFlip, // Flip the card on tap
@@ -114,10 +113,9 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
               axis: FlipAxis.vertical,
               controller: con,
               frontWidget: SizedBox(
-
                 width: screenWidth,
                 height: screenHeight,
-                child: CardFront(term: widget.term,button: nextButton),
+                child: CardFront(term: widget.term, button: nextButton),
               ),
               backWidget: SizedBox(
                 width: screenWidth,
@@ -127,7 +125,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
                   term: widget.term,
                   definition: widget.definition,
                   generation: widget.generation,
-                  button:nextButton
+                  button: nextButton,
                 ),
               ),
             ),

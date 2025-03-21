@@ -35,7 +35,7 @@ class SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 9), () {
+    Future.delayed(const Duration(seconds: 7), () {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomeScreen()),
@@ -53,8 +53,8 @@ class SplashScreenState extends State<SplashScreen> {
           Expanded(
             flex: 2,
             child: Center(
-              child: SvgPicture.asset(
-                'assets/images/company-logo.svg',
+              child: Image.asset(
+                'assets/images/company-logo.png',
                 fit: BoxFit.contain,
                 width: MediaQuery.of(context).size.width * 0.8,
               ),
@@ -81,7 +81,7 @@ class SplashScreenState extends State<SplashScreen> {
                       textStyle: const TextStyle(
                         fontSize: 22.0,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: Color(0xFF000080),
                       ),
                       speed: const Duration(milliseconds: 150),
                     ),

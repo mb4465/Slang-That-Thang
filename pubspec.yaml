@@ -74,6 +74,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/generations/
+    - assets/images/company-logo.png
     - assets/audio/card_flip.mp3
     - assets/audio/next_card.mp3
     - assets/audio/click.mp3
