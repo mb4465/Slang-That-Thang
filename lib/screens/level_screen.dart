@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:test2/data/terms_data.dart';
 import 'package:test2/data/globals.dart';
 import 'package:test2/widgets/flip_card_widget.dart';
@@ -24,6 +25,10 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
   bool isCardFront = true;
   bool isSoundEnabled = true;
   late AnimationController _cardAnimationController;
+  InterstitialAd? _interstitialAd;
+  bool _isAdLoaded = false;
+  int _cardCounter = 0; // counts the number of cards shown
+
 
   @override
   void initState() {
@@ -32,20 +37,25 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
     getSoundEnabled().then((value) {
       isSoundEnabled = value;
     });
-
     _cardAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
+
+    // Load the interstitial ad
+    _createInterstitialAd();
   }
+
 
   @override
   void dispose() {
     _pageController.dispose();
     _audioPlayer.dispose();
     _cardAnimationController.dispose();
+    _interstitialAd?.dispose();
     super.dispose();
   }
+
 
   void _getRandomTerm() {
     List<String> generations = termsData.keys.toList();
@@ -81,6 +91,25 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
 
     if (isSoundEnabled) _loadAndPlayAudio();
 
+    // Increase the card counter
+    _cardCounter++;
+
+    // Check if it’s time to show an interstitial ad
+    if (_cardCounter >= 20 && _isAdLoaded && _interstitialAd != null) {
+      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (InterstitialAd ad) {
+          ad.dispose();
+          _createInterstitialAd(); // Reload a new ad for future use
+        },
+        onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+          ad.dispose();
+          _createInterstitialAd(); // Reload a new ad if it fails to show
+        },
+      );
+      _interstitialAd!.show();
+      _cardCounter = 0; // Reset the counter after showing the ad
+    }
+
     _cardAnimationController.forward().then((_) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 1),
@@ -91,6 +120,7 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
       });
     });
   }
+
 
   Widget _buildAnimatedCard(Widget child) {
     return AnimatedBuilder(
@@ -179,4 +209,23 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
       ),
     );
   }
+
+  //Ads
+  void _createInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: 'ca-app-pub-2326982552327072/8228863861', // Use the test ad unit ID during development
+      request: AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (InterstitialAd ad) {
+          _interstitialAd = ad;
+          _isAdLoaded = true;
+        },
+        onAdFailedToLoad: (LoadAdError error) {
+          print('InterstitialAd failed to load: $error');
+          _isAdLoaded = false;
+        },
+      ),
+    );
+  }
+
 }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:test2/screens/home_screen.dart';
 import 'package:test2/screens/test_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  MobileAds.instance.initialize();
   runApp(MyApp());
 }
 
@@ -23,6 +26,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
