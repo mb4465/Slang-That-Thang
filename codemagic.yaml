@@ -1,0 +1,6 @@
+workflows:
+  ios-build:
+    name: iOS Build
+    environment:
+      ios:
+        build_format: ipa
