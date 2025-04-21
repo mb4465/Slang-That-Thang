@@ -1,171 +1,206 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:collection/collection.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:test2/screens/HowToPlay.dart';
-import 'AboutScreen.dart';
-import 'game_button.dart';
-import 'generational_card_screen.dart';
-import 'settings_screen.dart';
+
 import 'package:test2/data/globals.dart';
+import 'package:test2/screens/HowToPlay.dart';
+import 'package:test2/screens/AboutScreen.dart';
+import 'package:test2/screens/generational_card_screen.dart';
+import 'package:test2/screens/settings_screen.dart';
+
+import 'game_button.dart';
+
+const _kRemoveAdsProductId = 'remove_ads_premium';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
-
-  static const buttonWidth = 250.0;
-  static const buttonHeight = 60.0;
-  static const skewAngle = 0.0;
-  static const double topPadding = 70.0;
-  static const double titleBottomPadding = 150.0;
-  static const double buttonVerticalPadding = 16.0;
-  static const TextStyle titleTextStyle = TextStyle(
-    fontSize: 35,
-    fontWeight: FontWeight.bold,
-    color: Colors.black,
-  );
-
   @override
   State<MenuScreen> createState() => _MenuScreenState();
 }
 
 class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
+  // Animation
   late AnimationController _controller;
   int? _selectedButtonIndex;
-  final int _buttonCount = 4;
-  late List<Animation<Offset>> _slideAnimations;
-  late List<Animation<double>> _opacityAnimations;
-  static const double slideOffsetFactor = 1.5;
-  bool isSoundEnabled = true;
+  static const _buttonCount = 5;
+
+  // IAP
+  final InAppPurchase _iap = InAppPurchase.instance;
+  late StreamSubscription<List<PurchaseDetails>> _sub;
+  bool _storeAvailable = false;
+  List<ProductDetails> _products = [];
+  bool _adsRemoved = false;
+  bool _purchasePending = false;
+  bool _loading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    );
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _initEverything();
+  }
 
-// Check sound enabled state from your globals
-    getSoundEnabled().then((value) {
-      setState(() {
-        isSoundEnabled = value;
-      });
+  Future<void> _initEverything() async {
+    _adsRemoved = await getAdsRemovedStatus();
+    _sub = _iap.purchaseStream.listen(_onPurchaseUpdates, onError: (e) {
+      setState(() { _errorMessage = "Purchase stream error: $e"; });
     });
-
-    _slideAnimations = List.generate(_buttonCount, (index) {
-      final start = index / _buttonCount;
-      final end = (index + 1) / _buttonCount;
-      return Tween<Offset>(
-        begin: Offset.zero,
-        end: const Offset(slideOffsetFactor, 0.0),
-      ).animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Interval(start, end, curve: Curves.easeInOut),
-        ),
-      );
-    });
-
-    _opacityAnimations = List.generate(_buttonCount, (index) {
-      final start = index / _buttonCount;
-      final end = (index + 1) / _buttonCount;
-      return Tween<double>(
-        begin: 1.0,
-        end: 0.0,
-      ).animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Interval(start, end, curve: Curves.easeIn),
-        ),
-      );
-    });
+    final available = await _iap.isAvailable();
+    if (!available) {
+      setState(() { _storeAvailable = false; _loading = false; _errorMessage = "Store not available"; });
+      return;
+    }
+    _storeAvailable = true;
+    final response = await _iap.queryProductDetails({_kRemoveAdsProductId});
+    if (response.error != null) {
+      setState(() { _errorMessage = response.error!.message; _loading = false; });
+      return;
+    }
+    if (response.productDetails.isEmpty) {
+      setState(() { _errorMessage = "Product not found"; _loading = false; });
+      return;
+    }
+    setState(() { _products = response.productDetails; _loading = false; });
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _sub.cancel();
     super.dispose();
   }
 
-// Create a new AudioPlayer instance each time to reliably play the click sound.
-  Future<void> _loadAndPlayClickSound() async {
+  void _onPurchaseUpdates(List<PurchaseDetails> detailsList) {
+    for (final pd in detailsList) {
+      switch (pd.status) {
+        case PurchaseStatus.pending:
+          setState(() => _purchasePending = true);
+          break;
+        case PurchaseStatus.error:
+          setState(() { _errorMessage = pd.error?.message; _purchasePending = false; });
+          if (pd.pendingCompletePurchase) _iap.completePurchase(pd);
+          break;
+        case PurchaseStatus.purchased:
+        case PurchaseStatus.restored:
+          _verifyAndDeliver(pd);
+          break;
+        case PurchaseStatus.canceled:
+          setState(() => _purchasePending = false);
+          if (pd.pendingCompletePurchase) _iap.completePurchase(pd);
+          break;
+      }
+    }
+  }
+
+  Future<void> _verifyAndDeliver(PurchaseDetails pd) async {
+    final valid = pd.productID == _kRemoveAdsProductId;
+    if (valid) {
+      await setAdsRemoved(true);
+      setState(() { _adsRemoved = true; _purchasePending = false; });
+      _showSuccessDialog();
+    }
+    if (pd.pendingCompletePurchase) await _iap.completePurchase(pd);
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Success'),
+        content: const Text('Ads removed! Restart the app if you still see ads.'),
+        actions: [ TextButton(onPressed: ()=> Navigator.pop(context), child: const Text('OK')) ],
+      ),
+    );
+  }
+
+  void _startRemoveAdsPurchase() {
+    if (_adsRemoved || _purchasePending || !_storeAvailable) return;
+    final pd = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
+    if (pd == null) { setState(() => _errorMessage = "Product info unavailable."); return; }
+    setState(() => _purchasePending = true);
+    _iap.buyNonConsumable(purchaseParam: PurchaseParam(productDetails: pd));
+  }
+
+  Future<void> _playClick() async {
+    if (!await getSoundEnabled()) return;
     final player = AudioPlayer();
-// Optionally, set release mode to stop to ensure the sound doesn't loop.
-    await player.setReleaseMode(ReleaseMode.stop);
     await player.play(AssetSource('audio/click.mp3'));
   }
 
-  void _onButtonPressed(int index, Widget screen) async {
+  void _navigateTo(int index, Widget screen) {
     if (_controller.isAnimating || _selectedButtonIndex != null) return;
-
-    bool shouldPlaySound = await getSoundEnabled();
-    if (shouldPlaySound) {
-      _loadAndPlayClickSound();
-    }
-
+    _playClick();
     setState(() => _selectedButtonIndex = index);
     _controller.forward().then((_) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => screen),
-      ).then((_) {
-        setState(() => _selectedButtonIndex = null);
+      Navigator.push(context, MaterialPageRoute(builder: (_) => screen)).then((_) {
         _controller.reset();
+        setState(() => _selectedButtonIndex = null);
       });
     });
   }
 
-  Widget _buildAnimatedButton(int index, String text, Widget screen) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final isAnimating = _selectedButtonIndex != null;
-        final slideOffset = _slideAnimations[index].value;
-        final opacity = _opacityAnimations[index].value;
-
-        return Transform.translate(
-          offset: isAnimating
-              ? Offset(slideOffset.dx * MediaQuery.of(context).size.width, 0)
-              : Offset.zero,
-          child: Opacity(
-            opacity: isAnimating ? opacity : 1.0,
-            child: GameButton(
-              text: text,
-              width: MenuScreen.buttonWidth,
-              height: MenuScreen.buttonHeight,
-              skewAngle: MenuScreen.skewAngle,
-              onPressed: () => _onButtonPressed(index, screen),
-              isBold: true,
-            ),
-          ),
-        );
-      },
+  Widget _buildButton(int index, String text, VoidCallback onTap, {bool disabled = false}) {
+    return Opacity(
+      opacity: disabled ? 0.5 : 1.0,
+      child: Transform.translate(
+        offset: _selectedButtonIndex==index
+            ? Offset(_controller.value * MediaQuery.of(context).size.width, 0)
+            : Offset.zero,
+        child: GameButton(
+          text: text,
+          width: 250, height: 60,
+          skewAngle: 0.0,
+          onPressed: disabled ? null : () => onTap(),
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    const pad = SizedBox(height: 14);
+    final removeAdsProduct = _products.firstWhereOrNull((p) => p.id==_kRemoveAdsProductId);
+    final priceLabel = removeAdsProduct?.price ?? '...';
+
     return Scaffold(
       body: Stack(
         children: [
-          Container(
-            decoration: const BoxDecoration(color: Colors.white),
-            child: Center(
+          Center(
+            child: SingleChildScrollView(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: MenuScreen.topPadding),
-                  const Text(
-                    "Menu",
-                    style: MenuScreen.titleTextStyle,
-                  ),
-                  const SizedBox(height: MenuScreen.titleBottomPadding),
-                  _buildAnimatedButton(0, "How to Play", const Howtoplay()),
-                  const SizedBox(height: MenuScreen.buttonVerticalPadding),
-                  _buildAnimatedButton(1, "Generational Card", const GenerationalCardScreen()),
-                  const SizedBox(height: MenuScreen.buttonVerticalPadding),
-                  _buildAnimatedButton(2, "Settings", const SettingsScreen()),
-                  const SizedBox(height: MenuScreen.buttonVerticalPadding),
-                  _buildAnimatedButton(3, "About", const AboutScreen()),
+                  const SizedBox(height: 70),
+                  const Text('Menu', style: TextStyle(fontSize:35, fontWeight: FontWeight.bold)),
+                  const SizedBox(height:100),
+
+                  _buildButton(0, 'How to Play',   () => _navigateTo(0, const Howtoplay())), pad,
+                  _buildButton(1, 'Generational Card', () => _navigateTo(1, const GenerationalCardScreen())), pad,
+
+                  if (!_adsRemoved) ...[
+                    _buildButton(2, 'Remove Ads ($priceLabel)', _startRemoveAdsPurchase,
+                        disabled: _loading||_purchasePending||removeAdsProduct==null),
+                  ] else ...[
+                    Container(
+                      height: 60,
+                      alignment: Alignment.center,
+                      child: const Text('Ads Removed!', style: TextStyle(color:Colors.green, fontWeight: FontWeight.bold)),
+                    ),
+                  ], pad,
+
+                  _buildButton(3, 'Settings',    () => _navigateTo(3, const SettingsScreen())), pad,
+                  _buildButton(4, 'About',       () => _navigateTo(4, const AboutScreen())),
+                  const SizedBox(height:20),
+
+                  if (_errorMessage!=null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal:20,vertical:10),
+                      child: Text('Error: $_errorMessage', style: const TextStyle(color:Colors.red)),
+                    ),
                 ],
               ),
             ),

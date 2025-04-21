@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
@@ -14,38 +15,57 @@ class LevelScreen extends StatefulWidget {
 }
 
 class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin {
+  // Randomizer & controllers
   final Random _random = Random();
   final PageController _pageController = PageController();
   final AudioPlayer _audioPlayer = AudioPlayer();
+  late AnimationController _cardAnimationController;
+
+  // Card data
   late String _selectedGeneration;
   late String _selectedTerm;
   late String _selectedDefinition;
   late String _selectedIcon;
+
   bool isNextCard = true;
   bool isCardFront = true;
-  bool isSoundEnabled = true;
-  late AnimationController _cardAnimationController;
+
+  // Ad state
   InterstitialAd? _interstitialAd;
   bool _isAdLoaded = false;
-  int _cardCounter = 0; // counts the number of cards shown
+  bool _adsRemoved = false;
+  int _cardCounter = 0;
 
+  // Sound
+  bool isSoundEnabled = true;
+
+  /// Returns correct Ad Unit ID per platform
+  String get _adUnitId {
+    if (Platform.isAndroid) {
+      return 'ca-app-pub-9195859305045271/9115537722';
+    } else if (Platform.isIOS) {
+      return 'ca-app-pub-9195859305045271/6991937266';
+    }
+    return '';
+  }
 
   @override
   void initState() {
     super.initState();
     _getRandomTerm();
-    getSoundEnabled().then((value) {
-      isSoundEnabled = value;
+    // load prefs
+    getSoundEnabled().then((v) => isSoundEnabled = v);
+    getAdsRemovedStatus().then((v) {
+      _adsRemoved = v;
+      if (!_adsRemoved && _adUnitId.isNotEmpty) {
+        _createInterstitialAd();
+      }
     });
     _cardAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-
-    // Load the interstitial ad
-    _createInterstitialAd();
   }
-
 
   @override
   void dispose() {
@@ -56,20 +76,16 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
     super.dispose();
   }
 
-
   void _getRandomTerm() {
-    List<String> generations = termsData.keys.toList();
+    final generations = termsData.keys.toList();
     _selectedGeneration = generations[_random.nextInt(generations.length)];
-
-    List<Map<String, String>> termList = termsData[_selectedGeneration]!;
-    if (termList.isNotEmpty) {
-      Map<String, String> randomTerm = termList[_random.nextInt(termList.length)];
-      setState(() {
-        _selectedTerm = randomTerm["term"]!;
-        _selectedDefinition = randomTerm["definition"]!;
-        _selectedIcon = generationIcons[_selectedGeneration] ?? '';
-      });
-    }
+    final termList = termsData[_selectedGeneration]!;
+    final term = termList[_random.nextInt(termList.length)];
+    setState(() {
+      _selectedTerm = term['term']!;
+      _selectedDefinition = term['definition']!;
+      _selectedIcon = generationIcons[_selectedGeneration] ?? '';
+    });
   }
 
   Future<void> _loadAndPlayAudio() async {
@@ -77,50 +93,42 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
     await _audioPlayer.play(AssetSource('audio/next_card.mp3'));
   }
 
-  void _onPageChanged(int index) async {
+  void _onPageChanged(int index) {
     _getRandomTerm();
   }
 
   void _goToNextCard() {
-    if (!isNextCard) return;
-
-    setState(() {
-      isNextCard = false;
-      isCardFront = true;
-    });
-
     if (isSoundEnabled) _loadAndPlayAudio();
-
-    // Increase the card counter
     _cardCounter++;
 
-    // Check if it’s time to show an interstitial ad
-    if (_cardCounter >= 20 && _isAdLoaded && _interstitialAd != null) {
+    // Show ad every 20 cards if not removed
+    if (!_adsRemoved && _cardCounter >= 20 && _isAdLoaded && _interstitialAd != null) {
       _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-        onAdDismissedFullScreenContent: (InterstitialAd ad) {
+        onAdDismissedFullScreenContent: (ad) {
           ad.dispose();
-          _createInterstitialAd(); // Reload a new ad for future use
+          _createInterstitialAd();
         },
-        onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+        onAdFailedToShowFullScreenContent: (ad, err) {
           ad.dispose();
-          _createInterstitialAd(); // Reload a new ad if it fails to show
+          _createInterstitialAd();
         },
       );
       _interstitialAd!.show();
-      _cardCounter = 0; // Reset the counter after showing the ad
+      _cardCounter = 0;
     }
 
     _cardAnimationController.forward().then((_) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 1),
-        curve: Curves.linear,
-      ).then((_) {
-        _cardAnimationController.reset();
-        setState(() => isNextCard = true);
-      });
+      if (_pageController.hasClients) {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 1),
+          curve: Curves.linear,
+        ).then((_) {
+          _cardAnimationController.reset();
+          if (mounted) setState(() {});
+        });
+      }
     });
   }
-
 
   Widget _buildAnimatedCard(Widget child) {
     return AnimatedBuilder(
@@ -128,37 +136,22 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
       builder: (context, child) {
         return Stack(
           children: [
-            // Next Card Entrance
             Positioned.fill(
               child: FadeTransition(
-                opacity: Tween<double>(begin: 0.0, end: 1.0)
-                    .animate(_cardAnimationController),
+                opacity: Tween<double>(begin: 0, end: 1).animate(_cardAnimationController),
                 child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.0, 1.0),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: _cardAnimationController,
-                    curve: Curves.easeInOut,
-                  )),
+                  position: Tween<Offset>(begin: const Offset(0,1), end: Offset.zero)
+                      .animate(CurvedAnimation(parent: _cardAnimationController, curve: Curves.easeInOut)),
                   child: child,
                 ),
               ),
             ),
-
-            // Current Card Exit
             Positioned.fill(
               child: FadeTransition(
-                opacity: Tween<double>(begin: 1.0, end: 0.0)
-                    .animate(_cardAnimationController),
+                opacity: Tween<double>(begin: 1, end: 0).animate(_cardAnimationController),
                 child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: Offset.zero,
-                    end: const Offset(0.0, -0.5),
-                  ).animate(CurvedAnimation(
-                    parent: _cardAnimationController,
-                    curve: Curves.easeInOut,
-                  )),
+                  position: Tween<Offset>(begin: Offset.zero, end: const Offset(0,-0.5))
+                      .animate(CurvedAnimation(parent: _cardAnimationController, curve: Curves.easeInOut)),
                   child: child,
                 ),
               ),
@@ -173,6 +166,7 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
           PageView.builder(
@@ -199,8 +193,7 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
             left: 20,
             child: SafeArea(
               child: IconButton(
-                icon: Icon(Icons.arrow_back,
-                    color: isCardFront ? Colors.black : Colors.white),
+                icon: Icon(Icons.arrow_back, color: isCardFront ? Colors.black : Colors.white),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -210,22 +203,20 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
     );
   }
 
-  //Ads
   void _createInterstitialAd() {
+    if (_adUnitId.isEmpty || _adsRemoved) return;
     InterstitialAd.load(
-      adUnitId: 'ca-app-pub-2326982552327072/8228863861', // Use the test ad unit ID during development
-      request: AdRequest(),
+      adUnitId: _adUnitId,
+      request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (InterstitialAd ad) {
+        onAdLoaded: (ad) {
           _interstitialAd = ad;
           _isAdLoaded = true;
         },
-        onAdFailedToLoad: (LoadAdError error) {
-          print('InterstitialAd failed to load: $error');
-          _isAdLoaded = false;
+        onAdFailedToLoad: (error) {
+          debugPrint('Ad load failed: $error');
         },
       ),
     );
   }
-
 }

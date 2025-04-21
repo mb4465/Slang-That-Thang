@@ -1,4 +1,22 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.callidoraglobalmedia.slangthatthang">
+
+    <!-- 1) Declare INTERNET (already there) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- 2) Add the billing permission here (so Google Play can bill) -->
+    <uses-permission android:name="com.android.vending.BILLING"/>
+
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+
+    <!-- 3) (Optional) If your Google Mobile Ads setup needs query permissions -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+
     <application
         android:label="SLANG THAT THANG!!"
         android:name="${applicationName}"

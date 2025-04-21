@@ -17,8 +17,31 @@ final Map<String, String> generationIcons = {
   genAlpha: 'assets/images/generations/vrHeadset.png', // vr headset icon needed here-> not availble in faicon
 };
 
+// SharedPreferences keys
+const String _kSoundEnabledKey = 'sound_enabled';
+const String _kAdsRemovedKey    = 'ads_removed';
 
+/// Returns whether sound is enabled (defaults to true).
 Future<bool> getSoundEnabled() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getBool('sound_enabled') ?? true;
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getBool(_kSoundEnabledKey) ?? true;
 }
+
+/// Persist sound enabled/disabled state.
+Future<void> setSoundEnabled(bool enabled) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool(_kSoundEnabledKey, enabled);
+}
+
+/// Returns whether ads have been removed (i.e. user purchased "Remove Ads").
+Future<bool> getAdsRemovedStatus() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getBool(_kAdsRemovedKey) ?? false;
+}
+
+/// Persist the "ads removed" purchase state.
+Future<void> setAdsRemoved(bool removed) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool(_kAdsRemovedKey, removed);
+}
+

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class GameButton extends StatefulWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;   // allow null for disabled state
   final double width;
   final double height;
   final double skewAngle;
@@ -11,7 +11,7 @@ class GameButton extends StatefulWidget {
   const GameButton({
     super.key,
     required this.text,
-    required this.onPressed,
+    this.onPressed,
     required this.width,
     required this.height,
     required this.skewAngle,
@@ -22,7 +22,8 @@ class GameButton extends StatefulWidget {
   GameButtonState createState() => GameButtonState();
 }
 
-class GameButtonState extends State<GameButton> with SingleTickerProviderStateMixin {
+class GameButtonState extends State<GameButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -30,22 +31,17 @@ class GameButtonState extends State<GameButton> with SingleTickerProviderStateMi
   void initState() {
     super.initState();
 
-    // Initialize the animation controller
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
-    );
+    )..repeat(reverse: true);
 
-    // Create a scale animation that pulsates between 1.0 and 1.05
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(
         parent: _controller,
         curve: Curves.easeInOut,
       ),
     );
-
-    // Repeat the animation indefinitely
-    _controller.repeat(reverse: true);
   }
 
   @override
@@ -74,14 +70,18 @@ class GameButtonState extends State<GameButton> with SingleTickerProviderStateMi
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
               onPressed: widget.onPressed,
               child: Text(
                 widget.text,
                 style: TextStyle(
                   fontSize: 18,
-                  fontWeight: widget.isBold ? FontWeight.w900 : FontWeight.bold,
+                  fontWeight:
+                  widget.isBold ? FontWeight.w900 : FontWeight.bold,
                   letterSpacing: 1.2,
                 ),
               ),
