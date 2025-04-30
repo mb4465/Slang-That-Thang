@@ -24,7 +24,7 @@ class CardFront extends StatelessWidget {
                     // 'this is supposed to be a very long text',
                     term, // Use the passed text
                     style: const TextStyle(
-                      fontSize: 32,
+                      fontSize: 42,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
@@ -49,8 +49,8 @@ class CardFront extends StatelessWidget {
               padding: const EdgeInsets.all(20.0),
               child: SvgPicture.asset(
                 'assets/images/slang-icon.svg', // Path to your SVG
-                height: 50, // Adjust size as needed
-                width: 50,
+                height: 60, // Adjust size as needed
+                width: 60,
                 colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
               ),
             ),

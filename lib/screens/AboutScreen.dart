@@ -28,6 +28,8 @@ class _AboutScreenState extends State<AboutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -40,7 +42,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 70),
+                    SizedBox(height: screenHeight * 0.09),  // ~70
                     const Text(
                       "About",
                       style: TextStyle(
@@ -49,7 +51,7 @@ class _AboutScreenState extends State<AboutScreen> {
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 50),
+                    SizedBox(height: screenHeight * 0.06),  // ~50
                     Text(
                       _appName,
                       style: const TextStyle(
@@ -58,7 +60,7 @@ class _AboutScreenState extends State<AboutScreen> {
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: screenHeight * 0.015), // ~12
                     Text(
                       'Version: $_version',
                       style: const TextStyle(
@@ -66,7 +68,7 @@ class _AboutScreenState extends State<AboutScreen> {
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: screenHeight * 0.03), // ~24
                     const Text(
                       'Slang That Thang!! is an educational and entertaining game designed to bridge the gap between generations by exploring the evolution of slang. Test your knowledge of slang terms from different eras and see how well you understand the language of each generation.',
                       textAlign: TextAlign.center,
@@ -75,7 +77,7 @@ class _AboutScreenState extends State<AboutScreen> {
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: screenHeight * 0.04), // ~32
                     const Text(
                       '© 2024 Callidora Global Media. All rights reserved.',
                       textAlign: TextAlign.center,
@@ -103,4 +105,5 @@ class _AboutScreenState extends State<AboutScreen> {
       ),
     );
   }
+
 }

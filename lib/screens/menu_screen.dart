@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -23,12 +24,10 @@ class MenuScreen extends StatefulWidget {
 }
 
 class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
-  // Animation
   late AnimationController _controller;
   int? _selectedButtonIndex;
   static const _buttonCount = 5;
 
-  // IAP
   final InAppPurchase _iap = InAppPurchase.instance;
   late StreamSubscription<List<PurchaseDetails>> _sub;
   bool _storeAvailable = false;
@@ -48,24 +47,42 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   Future<void> _initEverything() async {
     _adsRemoved = await getAdsRemovedStatus();
     _sub = _iap.purchaseStream.listen(_onPurchaseUpdates, onError: (e) {
-      setState(() { _errorMessage = "Purchase stream error: $e"; });
+      setState(() {
+        _errorMessage = "Purchase stream error: $e";
+      });
     });
+
     final available = await _iap.isAvailable();
     if (!available) {
-      setState(() { _storeAvailable = false; _loading = false; _errorMessage = "Store not available"; });
+      setState(() {
+        _storeAvailable = false;
+        _loading = false;
+        _errorMessage = "Store not available";
+      });
       return;
     }
+
     _storeAvailable = true;
     final response = await _iap.queryProductDetails({_kRemoveAdsProductId});
     if (response.error != null) {
-      setState(() { _errorMessage = response.error!.message; _loading = false; });
+      setState(() {
+        _errorMessage = response.error!.message;
+        _loading = false;
+      });
       return;
     }
     if (response.productDetails.isEmpty) {
-      setState(() { _errorMessage = "Product not found"; _loading = false; });
+      setState(() {
+        _errorMessage = "Product not found";
+        _loading = false;
+      });
       return;
     }
-    setState(() { _products = response.productDetails; _loading = false; });
+
+    setState(() {
+      _products = response.productDetails;
+      _loading = false;
+    });
   }
 
   @override
@@ -82,7 +99,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           setState(() => _purchasePending = true);
           break;
         case PurchaseStatus.error:
-          setState(() { _errorMessage = pd.error?.message; _purchasePending = false; });
+          setState(() {
+            _errorMessage = pd.error?.message;
+            _purchasePending = false;
+          });
           if (pd.pendingCompletePurchase) _iap.completePurchase(pd);
           break;
         case PurchaseStatus.purchased:
@@ -101,7 +121,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     final valid = pd.productID == _kRemoveAdsProductId;
     if (valid) {
       await setAdsRemoved(true);
-      setState(() { _adsRemoved = true; _purchasePending = false; });
+      setState(() {
+        _adsRemoved = true;
+        _purchasePending = false;
+      });
       _showSuccessDialog();
     }
     if (pd.pendingCompletePurchase) await _iap.completePurchase(pd);
@@ -113,7 +136,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       builder: (_) => AlertDialog(
         title: const Text('Success'),
         content: const Text('Ads removed! Restart the app if you still see ads.'),
-        actions: [ TextButton(onPressed: ()=> Navigator.pop(context), child: const Text('OK')) ],
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: const Text('OK')),
+        ],
       ),
     );
   }
@@ -121,7 +147,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   void _startRemoveAdsPurchase() {
     if (_adsRemoved || _purchasePending || !_storeAvailable) return;
     final pd = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
-    if (pd == null) { setState(() => _errorMessage = "Product info unavailable."); return; }
+    if (pd == null) {
+      setState(() => _errorMessage = "Product info unavailable.");
+      return;
+    }
     setState(() => _purchasePending = true);
     _iap.buyNonConsumable(purchaseParam: PurchaseParam(productDetails: pd));
   }
@@ -145,17 +174,32 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildButton(int index, String text, VoidCallback onTap, {bool disabled = false}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    const double maxButtonWidth = 400.0;
+    const double widthFactor = 0.7;
+    const double heightFactor = 0.075;
+
+    final double buttonWidth = min(screenWidth * widthFactor, maxButtonWidth);
+    final double buttonHeight = screenHeight * heightFactor;
+
     return Opacity(
       opacity: disabled ? 0.5 : 1.0,
       child: Transform.translate(
-        offset: _selectedButtonIndex==index
-            ? Offset(_controller.value * MediaQuery.of(context).size.width, 0)
+        offset: _selectedButtonIndex == index
+            ? Offset(_controller.value * screenWidth, 0)
             : Offset.zero,
         child: GameButton(
           text: text,
-          width: 250, height: 60,
-          skewAngle: 0.0,
+          width: buttonWidth,
+          height: buttonHeight,
+          // skewAngle: 0.0,
           onPressed: disabled ? null : () => onTap(),
+          isBold: true,
+          // backgroundColor: Colors.white,
+          // textColor: Colors.black,
+          // borderColor: Colors.black,
         ),
       ),
     );
@@ -163,8 +207,14 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    const pad = SizedBox(height: 14);
-    final removeAdsProduct = _products.firstWhereOrNull((p) => p.id==_kRemoveAdsProductId);
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    final pad = SizedBox(height: screenHeight * 0.018);
+    final topSpacing = screenHeight * 0.09;
+    final titleSpacing = screenHeight * 0.12;
+    final bottomSpacing = screenHeight * 0.025;
+
+    final removeAdsProduct = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
     final priceLabel = removeAdsProduct?.price ?? '...';
 
     return Scaffold(
@@ -174,32 +224,39 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  const SizedBox(height: 70),
-                  const Text('Menu', style: TextStyle(fontSize:35, fontWeight: FontWeight.bold)),
-                  const SizedBox(height:100),
+                  SizedBox(height: topSpacing),
+                  const Text('Menu', style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold)),
+                  SizedBox(height: titleSpacing),
 
-                  _buildButton(0, 'How to Play',   () => _navigateTo(0, const Howtoplay())), pad,
+                  _buildButton(0, 'How to Play', () => _navigateTo(0, const Howtoplay())), pad,
                   _buildButton(1, 'Generational Card', () => _navigateTo(1, const GenerationalCardScreen())), pad,
 
                   if (!_adsRemoved) ...[
-                    _buildButton(2, 'Remove Ads ($priceLabel)', _startRemoveAdsPurchase,
-                        disabled: _loading||_purchasePending||removeAdsProduct==null),
-                  ] else ...[
-                    Container(
-                      height: 60,
-                      alignment: Alignment.center,
-                      child: const Text('Ads Removed!', style: TextStyle(color:Colors.green, fontWeight: FontWeight.bold)),
+                    _buildButton(
+                      2,
+                      'Remove Ads ($priceLabel)',
+                      _startRemoveAdsPurchase,
+                      disabled: _loading || _purchasePending || removeAdsProduct == null,
                     ),
-                  ], pad,
+                  ] else ...[
+                    SizedBox(
+                      height: screenHeight * 0.075,
+                      child: const Center(
+                        child: Text('Ads Removed!',
+                            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                  pad,
 
-                  _buildButton(3, 'Settings',    () => _navigateTo(3, const SettingsScreen())), pad,
-                  _buildButton(4, 'About',       () => _navigateTo(4, const AboutScreen())),
-                  const SizedBox(height:20),
+                  _buildButton(3, 'Settings', () => _navigateTo(3, const SettingsScreen())), pad,
+                  _buildButton(4, 'About', () => _navigateTo(4, const AboutScreen())),
+                  SizedBox(height: bottomSpacing),
 
-                  if (_errorMessage!=null)
+                  if (_errorMessage != null)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal:20,vertical:10),
-                      child: Text('Error: $_errorMessage', style: const TextStyle(color:Colors.red)),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      child: Text('Error: $_errorMessage', style: const TextStyle(color: Colors.red)),
                     ),
                 ],
               ),

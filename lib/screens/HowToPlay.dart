@@ -25,6 +25,9 @@ class _HowToPlayState extends State<Howtoplay> {
   void initState() {
     super.initState();
     _audioPlayer.setReleaseMode(ReleaseMode.stop);
+    _audioPlayer.onPlayerComplete.listen((event) {
+      _isSoundPlaying = false;
+    });
   }
 
   @override
@@ -34,27 +37,26 @@ class _HowToPlayState extends State<Howtoplay> {
   }
 
   Future<void> _loadAndPlayClickSound() async {
-    if (_isSoundPlaying) return; // Don't play if already playing
-    _isSoundPlaying = true;
+    if (_isSoundPlaying) return;
     bool shouldPlaySound = await getSoundEnabled();
-    if (shouldPlaySound) {
-      await _audioPlayer.stop(); // Stop any current playback
-      await _audioPlayer.play(AssetSource('audio/rules.mp3'));
-    }
-    _audioPlayer.onPlayerComplete.listen((event) {
-      // Reset _isSoundPlaying when sound finishes
-      _isSoundPlaying = false;
-    });
 
+    if (shouldPlaySound) {
+      _isSoundPlaying = true;
+      try {
+        await _audioPlayer.stop();
+        await _audioPlayer.play(AssetSource('audio/rules.mp3'));
+      } finally {
+        Future.delayed(const Duration(seconds: 3), () {
+          _isSoundPlaying = false;
+        });
+      }
+    }
   }
 
   void _previousImage() async {
     await _loadAndPlayClickSound();
     setState(() {
-      _currentImageIndex = (_currentImageIndex - 1) % _imagePaths.length;
-      if (_currentImageIndex < 0) {
-        _currentImageIndex = _imagePaths.length - 1;
-      }
+      _currentImageIndex = (_currentImageIndex - 1 + _imagePaths.length) % _imagePaths.length;
     });
   }
 
@@ -67,14 +69,17 @@ class _HowToPlayState extends State<Howtoplay> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final iconSize = screenHeight * 0.05; // ~40 on 800px height
+    final padding = screenWidth * 0.05;   // ~20 on 400px width
+
     return Scaffold(
       body: Stack(
         children: [
           // Background Image
           Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-            ),
+            decoration: const BoxDecoration(color: Colors.white),
             child: Center(
               child: SvgPicture.asset(
                 _imagePaths[_currentImageIndex],
@@ -84,45 +89,35 @@ class _HowToPlayState extends State<Howtoplay> {
           ),
 
           // Navigation Buttons
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+          Positioned.fill(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  onPressed: _previousImage,
-                  icon: const Icon(
-                    Icons.arrow_back_ios,
-                    size: 40,
-                    color: Colors.black,
+                Padding(
+                  padding: EdgeInsets.only(left: padding),
+                  child: IconButton(
+                    onPressed: _previousImage,
+                    icon: Icon(Icons.arrow_back_ios, size: iconSize, color: Colors.black),
                   ),
                 ),
-                IconButton(
-                  onPressed: _nextImage,
-                  icon: const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 40,
-                    color: Colors.black,
+                Padding(
+                  padding: EdgeInsets.only(right: padding),
+                  child: IconButton(
+                    onPressed: _nextImage,
+                    icon: Icon(Icons.arrow_forward_ios, size: iconSize, color: Colors.black),
                   ),
                 ),
               ],
             ),
           ),
 
-          // Back Button
+          // Back Button (top-left)
           Positioned(
-            top: 20, // Adjust top position as needed
-            left: 20, // Adjust left position as needed
-            child: SafeArea(
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () {
-                  Navigator.pop(context); // Navigate back
-                },
-              ),
+            top: MediaQuery.of(context).padding.top + screenHeight * 0.02, // ~20
+            left: padding,
+            child: IconButton(
+              icon: Icon(Icons.arrow_back, color: Colors.black, size: iconSize),
+              onPressed: () => Navigator.pop(context),
             ),
           ),
         ],

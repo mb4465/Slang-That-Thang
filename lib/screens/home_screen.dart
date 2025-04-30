@@ -16,8 +16,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  static const buttonWidth = 250.0;
-  static const buttonHeight = 50.0;
+  static const buttonWidthFactor = 0.7;   // 70% of screen width
+  static const buttonHeightFactor = 0.08; // 8% of screen height
   static const skewAngle = 0.15;
 
   late AnimationController _screenController;
@@ -137,19 +137,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildAnimatedButton(String text, VoidCallback onPressed, int index) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    const maxButtonWidth = 400.0;
+    const heightFactor = 0.075;
+
+    final buttonWidth = min(screenWidth * 0.7, maxButtonWidth);
+    final buttonHeight = MediaQuery.of(context).size.height * heightFactor;
+
     return SlideTransition(
       position: _buttonAnimations[index],
       child: GameButton(
         text: text,
         width: buttonWidth,
         height: buttonHeight,
-        skewAngle: skewAngle,
-        // Disable button presses while animating.
-        onPressed: _isAnimating ? () {} : onPressed,
+        onPressed: _isAnimating ? null : onPressed,
         isBold: true,
       ),
     );
   }
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +203,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  const SizedBox(height: 40),
+                  // const SizedBox(height: 40),
+                  // SizedBox(height: screenHeight * 0.05), // instead of 40
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.05),
                   Center(
                     child: SvgPicture.asset(
                       'assets/images/main_icon_crop.svg',
@@ -202,7 +213,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       width: 400,
                     ),
                   ),
-                  const SizedBox(height: 100),
+                  // const SizedBox(height: 100),
+                  // SizedBox(height: screenHeight * 0.12), // instead of 100
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.12),
                   Center(
                     child: Column(
                       children: [
@@ -219,7 +232,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             });
                           });
                         }, 0),
-                        const SizedBox(height: 16),
+                        // const SizedBox(height: 16),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                         _buildAnimatedButton("Menu", () {
                           _onHomeButtonPressed(() {
                             Navigator.push(

@@ -165,6 +165,11 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final iconSize = screenHeight * 0.04; // About 32px on 800 height
+    final padding = screenWidth * 0.05;   // About 20px on 400 width
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -188,12 +193,18 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
               );
             },
           ),
+
+          // Responsive Back Button
           Positioned(
-            top: 20,
-            left: 20,
+            top: MediaQuery.of(context).padding.top + screenHeight * 0.02,
+            left: padding,
             child: SafeArea(
               child: IconButton(
-                icon: Icon(Icons.arrow_back, color: isCardFront ? Colors.black : Colors.white),
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: isCardFront ? Colors.black : Colors.white,
+                  size: iconSize,
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
             ),

@@ -57,7 +57,7 @@ class CardBack extends StatelessWidget {
                     term,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 32,
+                      fontSize: 42,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -71,7 +71,7 @@ class CardBack extends StatelessWidget {
                     // 'this is supposed to be a very long text very long too long to comprehend wow',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 40,
                       color: Colors.white,
                     ),
                   ),
@@ -90,7 +90,7 @@ class CardBack extends StatelessWidget {
           Align(
             alignment: Alignment.bottomLeft,
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(40.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribute space evenly
                 crossAxisAlignment: CrossAxisAlignment.end, // Align items to the bottom
@@ -98,8 +98,8 @@ class CardBack extends StatelessWidget {
                   // Slang Icon
                   SvgPicture.asset(
                     'assets/images/slang-icon.svg', // Path to your SVG
-                    height: 50, // Adjust size as needed
-                    width: 50,
+                    height: 60, // Adjust size as needed
+                    width: 60,
                     colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn), // Set color to white
                   ),
 
@@ -108,7 +108,7 @@ class CardBack extends StatelessWidget {
                     addNewlineBeforeBracket(generation),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 20,
                       color: Colors.white,
                     ),
                   ),
