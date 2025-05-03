@@ -209,8 +209,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Center(
                     child: SvgPicture.asset(
                       'assets/images/main_icon_crop.svg',
-                      height: 400,
-                      width: 400,
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      width: MediaQuery.of(context).size.width * 1,
                     ),
                   ),
                   // const SizedBox(height: 100),

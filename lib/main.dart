@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,20 +8,14 @@ import 'package:test2/screens/home_screen.dart';
 import 'package:test2/screens/test_screen.dart';
 import 'package:device_preview/device_preview.dart';
 
-// void main() {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   MobileAds.instance.initialize();
-//   runApp(MyApp());
-// }
-
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
   runApp(
-      DevicePreview(
-        enabled: !kReleaseMode,
-        builder: (context) => MyApp(), // Wrap your app
-      ),
+    DevicePreview(
+      enabled: !kReleaseMode,
+      builder: (context) => const MyApp(),
+    ),
   );
 }
 
@@ -35,11 +30,10 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: SplashScreen(),
+      home: const SplashScreen(),
     );
   }
 }
-
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -62,6 +56,8 @@ class SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -73,32 +69,33 @@ class SplashScreenState extends State<SplashScreen> {
               child: Image.asset(
                 'assets/images/company-logo.png',
                 fit: BoxFit.contain,
-                width: MediaQuery.of(context).size.width * 0.8,
+                width: screenWidth * 0.8,
               ),
             ),
           ),
           Expanded(
             flex: 1,
-            child: Column( // Changed Center to Column to stack the texts
-              mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   'Powered by',
-                  textAlign: TextAlign.center, // Center horizontally
-                  style: const TextStyle(
-                    fontSize: 16.0,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.04,
                     fontWeight: FontWeight.normal,
-                    color: Colors.black, // Set "Powered by" to black
+                    color: Colors.black,
                   ),
                 ),
+                const SizedBox(height: 8),
                 AnimatedTextKit(
+                  key: ValueKey(screenWidth), // Key added here
                   animatedTexts: [
                     TypewriterAnimatedText(
                       'Callidora Global Media',
-                      textStyle: const TextStyle(
-                        fontSize: 22.0,
+                      textStyle: TextStyle(
+                        fontSize: screenWidth * 0.04,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF000080),
+                        color: const Color(0xFF000080),
                       ),
                       speed: const Duration(milliseconds: 150),
                     ),

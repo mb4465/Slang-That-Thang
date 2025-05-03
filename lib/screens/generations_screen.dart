@@ -61,7 +61,7 @@ class GenerationsScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 const Center(
                   child: Text(
-                    "Slang that Thank",
+                    "Slang That Thang!!",
                     style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
                   ),
                 ),

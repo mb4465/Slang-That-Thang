@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart'; // Import flutter_svg
+import 'package:flutter_svg/flutter_svg.dart';
 
 class CardBack extends StatelessWidget {
   final String term;
@@ -14,110 +14,110 @@ class CardBack extends StatelessWidget {
     required this.definition,
     required this.image,
     required this.generation,
-     required this.button,
+    required this.button,
   });
-//
+
   String addNewlineBeforeBracket(String input) {
-    int bracketIndex = input.indexOf('(');
-
-    if (bracketIndex != -1) {
-      return '${input.substring(0, bracketIndex)}\n${input.substring(bracketIndex)}';
-    }
-
-    return input;
+    final bracketIndex = input.indexOf('(');
+    return bracketIndex != -1
+        ? '${input.substring(0, bracketIndex)}\n${input.substring(bracketIndex)}'
+        : input;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Align(
-            alignment: Alignment.topCenter,
-            child: Padding(
-              padding: EdgeInsets.only(top: 80),
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: 35,
-                  maxHeight: 35,
-                ),
-                child: image,
-              )
-            ),
-          ),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: Text(
-                              // 'this is supposed to be a very long text',
-                    term,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 42,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                  child: Text(
-                    definition,
-                    // 'this is supposed to be a very long text very long too long to comprehend wow',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 40,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Slang Icon and Generation at the bottom left and right respectively
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-                padding: const EdgeInsets.only(bottom: 80.0),
-                child: button
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: Padding(
-              padding: const EdgeInsets.all(40.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribute space evenly
-                crossAxisAlignment: CrossAxisAlignment.end, // Align items to the bottom
-                children: [
-                  // Slang Icon
-                  SvgPicture.asset(
-                    'assets/images/slang-icon.svg', // Path to your SVG
-                    height: 60, // Adjust size as needed
-                    width: 60,
-                    colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn), // Set color to white
-                  ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final screenHeight = constraints.maxHeight;
 
-                  // Generation
-                  Text(
-                    addNewlineBeforeBracket(generation),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      color: Colors.white,
-                    ),
+        return Scaffold(
+          backgroundColor: Colors.black,
+          body: Stack(
+            children: [
+              Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 80),
+                  child: Container(
+                    key: ValueKey('image-container-$screenWidth-$screenHeight'),
+                    width: screenWidth * 0.6,
+                    height: screenHeight * 0.25,
+                    child: image,
                   ),
-                ],
+                ),
               ),
-            ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      child: Text(
+                        term,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.08,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                      child: Text(
+                        definition,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.08,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 80.0),
+                  child: button,
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomLeft,
+                child: Padding(
+                  padding: const EdgeInsets.all(40.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      SvgPicture.asset(
+                        'assets/images/slang-icon.svg',
+                        height: screenWidth * 0.06, // Changed to width-based
+                        width: screenWidth * 0.06,  // Changed to width-based
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      Text(
+                        addNewlineBeforeBracket(generation),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.03,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

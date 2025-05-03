@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
 import 'package:audioplayers/audioplayers.dart'; // Add this import
@@ -75,24 +77,32 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final double screenHeight = MediaQuery.of(context).size.height;
+    final double buttonWidth = screenWidth * 0.1; // 20% of screen width
+    final double buttonHeight = screenHeight * 0.04; // 8% of screen height
+    final double iconSize = min(screenWidth, screenHeight) * 0.04; // responsive icon
 
     // Updated next button: wrapped in a Transform to match the required type
     final nextButton = Transform(
       transform: Matrix4.identity(), // No skew transformation, just to match the expected type
       alignment: Alignment.center,
       child: SizedBox(
+        width: buttonWidth,
+        height: buttonHeight,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: _isFront ? Colors.white : Colors.black,
             foregroundColor: _isFront ? Colors.black : Colors.white,
             side: BorderSide(color: _isFront ? Colors.black : Colors.white, width: 2),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12), // Curved corners
+              borderRadius: BorderRadius.circular(12),
             ),
+            padding: EdgeInsets.zero, // Remove default padding
+            alignment: Alignment.center, // Force center alignment
           ),
           onPressed: widget.onNextButtonPressed,
           child: Icon(
             Icons.arrow_forward,
+            size: iconSize,
             color: _isFront ? Colors.black : Colors.white,
           ),
         ),
