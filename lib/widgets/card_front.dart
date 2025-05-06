@@ -25,7 +25,7 @@ class CardFront extends StatelessWidget {
                     term, // Use the passed text
                     style: TextStyle(
                       // fontSize: 42,
-                      fontSize: MediaQuery.of(context).size.width * 0.08, // roughly 8% of screen width
+                      fontSize: MediaQuery.of(context).size.width * 0.09, // roughly 8% of screen width
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
@@ -52,8 +52,8 @@ class CardFront extends StatelessWidget {
                 'assets/images/slang-icon.svg', // Path to your SVG
                 // height: 60, // Adjust size as needed
                 // width: 60,
-                height: MediaQuery.of(context).size.height * 0.06,
-                width: MediaQuery.of(context).size.height * 0.06,
+                height: MediaQuery.of(context).size.height * 0.08,
+                width: MediaQuery.of(context).size.height * 0.08,
                 colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
               ),
             ),

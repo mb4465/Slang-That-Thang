@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+// Import your GenerationRow widget if it's in a separate file
+// Make sure the path is correct if you've put GenerationRow in its own file
+// For this example, I'll assume it's in a file named 'generation_row.dart' in the same directory or a 'widgets' subdir.
+// import 'generation_row.dart'; // If GenerationRow is in the same directory
+// import 'widgets/generation_row.dart'; // If in a 'widgets' subdirectory
+
+// Assuming generation_data.dart is in a 'data' subdirectory or similar
+import 'generation_data.dart';
+import 'generation_row.dart';
 
 class GenerationsScreen extends StatelessWidget {
   const GenerationsScreen({super.key});
@@ -8,107 +17,42 @@ class GenerationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text("Generations", style: TextStyle(color: Colors.black)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
       body: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Center(
-                  child: Text(
-                    "Generations",
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 20),
                 Expanded(
                   child: ListView(
-                    children: const [
-                      GenerationRow(
-                        title: "Silent Generation",
-                        years: "1928 - 1945",
-                        icon: Icons.mic, // 🎙️
-                      ),
-                      GenerationRow(
-                        title: "Baby Boomers",
-                        years: "1946 - 1964",
-                        icon: FontAwesomeIcons.peace, // ☮️ (FontAwesome)
-                      ),
-                      GenerationRow(
-                        title: "Gen X",
-                        years: "1965 - 1980",
-                        icon: Icons.computer, // 💻
-                      ),
-                      GenerationRow(
-                        title: "Millennials",
-                        years: "1981 - 1996",
-                        icon: Icons.smartphone, // 📱
-                      ),
-                      GenerationRow(
-                        title: "Gen Z",
-                        years: "1997 - 2012",
-                        icon: Icons.videogame_asset, // 🎮
-                      ),
-                      GenerationRow(
-                        title: "Gen Alpha",
-                        years: "2013 - present",
-                        icon: FontAwesomeIcons.vrCardboard, // 🕶️ (FontAwesome alternative)
-                      ),
-                    ],
+                    // REMOVE 'const' from here
+                    children: kAllGenerationDetails.map((detail) {
+                      return GenerationRow(
+                        key: ValueKey(detail.name), // Good practice for lists
+                        title: detail.name,
+                        years: detail.years.replaceAll('(', '').replaceAll(')', ''), // Clean up years string for display
+                        icon: detail.icon,
+                      );
+                    }).toList(),
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Center(
-                  child: Text(
-                    "Slang That Thang!!",
-                    style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
-                  ),
+                const Text(
+                  "Slang That Thang!!",
+                  style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.black54),
                 ),
+                const SizedBox(height: 10),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-// Updated GenerationRow widget
-class GenerationRow extends StatelessWidget {
-  final String title;
-  final String years;
-  final IconData icon; // Corrected type
-
-  const GenerationRow({
-    super.key,
-    required this.title,
-    required this.years,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                "• $years",
-                style: const TextStyle(fontSize: 16),
-              ),
-            ],
-          ),
-          FaIcon(icon, size: 30), // Using FaIcon for FontAwesome icons
-        ],
       ),
     );
   }

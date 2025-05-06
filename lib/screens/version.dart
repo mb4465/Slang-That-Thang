@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart'; // Import package_info_plus
+import 'package:package_info_plus/package_info_plus.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -28,6 +28,10 @@ class _AboutScreenState extends State<AboutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Adjust base size depending on width (you can tweak these numbers as needed)
+    double scale(double base) => base * (screenWidth / 375).clamp(0.8, 1.4);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
@@ -37,41 +41,41 @@ class _AboutScreenState extends State<AboutScreen> {
       backgroundColor: Colors.white,
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(scale(24)),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 _appName,
-                style: const TextStyle(
-                  fontSize: 24,
+                style: TextStyle(
+                  fontSize: scale(24),
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: scale(12)),
               Text(
                 'Version: $_version',
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: scale(16),
                   color: Colors.black,
                 ),
               ),
-              const SizedBox(height: 24),
-              const Text(
+              SizedBox(height: scale(24)),
+              Text(
                 'Slang That Thang!! is an educational and entertaining game designed to bridge the gap between generations by exploring the evolution of slang. Test your knowledge of slang terms from different eras and see how well you understand the language of each generation.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: scale(18),
                   color: Colors.black,
                 ),
               ),
-              const SizedBox(height: 32),
-              const Text(
-                '© 2024 Your Company Name. All rights reserved.', // Replace with your copyright information
+              SizedBox(height: scale(32)),
+              Text(
+                '© 2024 Your Company Name. All rights reserved.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: scale(14),
                   color: Colors.black,
                 ),
               ),
