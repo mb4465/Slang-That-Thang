@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 // Import your GenerationRow widget if it's in a separate file
 // Make sure the path is correct if you've put GenerationRow in its own file
 // For this example, I'll assume it's in a file named 'generation_row.dart' in the same directory or a 'widgets' subdir.

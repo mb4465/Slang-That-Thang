@@ -9,14 +9,14 @@ class GameButton extends StatelessWidget {
   final double? fontSize; // Added fontSize parameter
 
   const GameButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.width,
     required this.height,
     required this.onPressed,
     this.isBold = false,
     this.fontSize, // Added to constructor
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

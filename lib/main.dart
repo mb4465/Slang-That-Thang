@@ -1,11 +1,8 @@
-import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:test2/screens/home_screen.dart';
-import 'package:test2/screens/test_screen.dart';
 import 'package:device_preview/device_preview.dart';
 
 void main() {

@@ -47,7 +47,7 @@ class CardBack extends StatelessWidget {
                 alignment: Alignment.topCenter,
                 child: Padding(
                   padding: EdgeInsets.only(top: screenHeight * 0.08), // Responsive top padding
-                  child: Container(
+                  child: SizedBox(
                       key: ValueKey('image-container-$screenWidth-$screenHeight'),
                       width: screenWidth * 0.09,
                       height: screenHeight * 0.095,
