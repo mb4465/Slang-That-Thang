@@ -17,6 +17,7 @@ import 'settings_screen.dart';
 import 'game_button.dart'; // Assuming this is in the same directory or a 'widgets' subdirectory
 
 const _kRemoveAdsProductId = 'remove_ads_premium'; // Make sure this matches your IAP ID
+const String _kGooglePlayReviewCouponCode = "REVIEWACCESS2025";
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -37,6 +38,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   bool _loading = true;
   String? _errorMessage;
 
+  final TextEditingController _couponController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -52,7 +55,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       if (!mounted) return;
       setState(() {
         _errorMessage = "Purchase stream error: $e";
-        _loading = false; // Also set loading to false on stream error
+        _purchasePending = false;
+        _loading = false;
       });
     });
 
@@ -62,13 +66,12 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       setState(() {
         _storeAvailable = false;
         _loading = false;
-        _errorMessage = "Store not available";
+        _errorMessage = "Store not available. In-app purchases are disabled.";
       });
       return;
     }
 
     _storeAvailable = true;
-    // Wrap product query in try-catch for robustness
     try {
       final response = await _iap.queryProductDetails({_kRemoveAdsProductId});
       if (!mounted) return;
@@ -103,6 +106,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   void dispose() {
     _controller.dispose();
     _sub.cancel();
+    _couponController.dispose();
     super.dispose();
   }
 
@@ -135,19 +139,19 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   Future<void> _verifyAndDeliver(PurchaseDetails pd) async {
     final valid = pd.productID == _kRemoveAdsProductId;
     if (valid) {
-      await setAdsRemoved(true); // Use the global setter
+      await setAdsRemoved(true);
       if (!mounted) return;
       setState(() {
         _adsRemoved = true;
         _purchasePending = false;
       });
-      _showSuccessDialog();
+      _showSuccessDialog('Purchase successful! Ads removed. Restart the app if you still see ads.');
     }
     if (pd.pendingCompletePurchase) await _iap.completePurchase(pd);
   }
 
-  void _showSuccessDialog() {
-    if (!mounted || !Navigator.of(context).canPop()) return;
+  void _showSuccessDialog([String? customMessage]) {
+    if (!mounted) return;
     final screenWidth = MediaQuery.of(context).size.width;
     final dialogTitleFontSize = screenWidth * 0.05;
     final dialogContentFontSize = screenWidth * 0.04;
@@ -157,7 +161,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       context: context,
       builder: (_) => AlertDialog(
         title: Text('Success', style: TextStyle(fontSize: dialogTitleFontSize, fontWeight: FontWeight.bold)),
-        content: Text('Ads removed! Restart the app if you still see ads.', style: TextStyle(fontSize: dialogContentFontSize)),
+        content: Text(customMessage ?? 'Ads removed! Restart the app if you still see ads.', style: TextStyle(fontSize: dialogContentFontSize)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
@@ -167,7 +171,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     );
   }
 
-  Future<void> _playUiClickSound() async { // Consistent naming
+  Future<void> _playUiClickSound() async {
     if (await getSoundEnabled()) {
       final player = AudioPlayer();
       await player.setReleaseMode(ReleaseMode.stop);
@@ -175,13 +179,11 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _startRemoveAdsPurchase() async { // Added async
-    await _playUiClickSound(); // Play sound
-    if (_adsRemoved || _purchasePending || !_storeAvailable) return;
+  Future<void> _initiateInAppPurchase() async {
     final pd = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
     if (pd == null) {
       if (!mounted) return;
-      setState(() => _errorMessage = "Product info unavailable.");
+      setState(() => _errorMessage = "Product info unavailable for purchase.");
       return;
     }
     if (!mounted) return;
@@ -189,9 +191,177 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     _iap.buyNonConsumable(purchaseParam: PurchaseParam(productDetails: pd));
   }
 
-  void _navigateTo(int index, Widget screen) async { // Added async
+  // Helper to build GameButtons for dialogs
+  Widget _buildDialogGameButton({
+    required String text,
+    required VoidCallback? onPressed,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Adjust width for dialogs - make them noticeable but not overly wide
+    final double buttonWidth = min(screenWidth * 0.65, 260.0);
+    const double buttonHeight = 48.0; // A slightly larger, more touch-friendly height for dialog buttons
+    final double buttonFontSize = buttonHeight * 0.32;
+
+    return Opacity(
+      opacity: onPressed == null ? 0.5 : 1.0, // Visual cue for disabled state
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0), // Spacing between buttons if stacked
+        child: GameButton(
+          text: text,
+          width: buttonWidth,
+          height: buttonHeight,
+          onPressed: onPressed,
+          isBold: true,
+          fontSize: buttonFontSize,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showCouponInputDialog() async {
+    if (!mounted) return;
+    _couponController.clear();
+
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Center(child: Text('Enter Coupon Code', style: TextStyle(fontSize: screenWidth * 0.055, fontWeight: FontWeight.bold))),
+          contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 0), // Adjust padding
+          content: SingleChildScrollView( // Ensure content can scroll if needed
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _couponController,
+                  decoration: const InputDecoration(
+                    hintText: "Coupon Code",
+                    border: OutlineInputBorder(), // Give TextField a border
+                  ),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 20),
+                _buildDialogGameButton(
+                  text: 'Submit',
+                  onPressed: () async {
+                    final enteredCode = _couponController.text.trim();
+                    Navigator.of(dialogContext).pop(); // Close coupon dialog first
+                    if (enteredCode == _kGooglePlayReviewCouponCode) {
+                      await setAdsRemoved(true);
+                      if (!mounted) return;
+                      setState(() {
+                        _adsRemoved = true;
+                      });
+                      _showSuccessDialog("Coupon applied successfully! Ads have been removed.");
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Invalid coupon code.')),
+                        );
+                      }
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel', style: TextStyle(color: Theme.of(context).primaryColor)),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+          ],
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)), // Softer corners
+        );
+      },
+    );
+  }
+
+  Future<void> _showRemoveAdsOptionsDialog() async {
+    await _playUiClickSound();
+    if (!mounted) return;
+
+    final productDetailsForDialog = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    String payButtonText;
+    bool canPay = false;
+
+    if (_purchasePending) {
+      payButtonText = 'Processing...';
+      canPay = false;
+    } else if (!_storeAvailable) {
+      payButtonText = 'Pay (Store Unavailable)';
+      canPay = false;
+    } else if (_loading && productDetailsForDialog == null) { // If still loading AND no product yet
+      payButtonText = 'Pay (Loading Store...)';
+      canPay = false;
+    }
+    else if (productDetailsForDialog == null) {
+      payButtonText = 'Pay (Item Unavailable)';
+      canPay = false;
+    } else {
+      payButtonText = 'Pay ${productDetailsForDialog.price}';
+      canPay = true;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Center(child: Text('Remove Ads', style: TextStyle(fontSize: screenWidth * 0.06, fontWeight: FontWeight.bold))),
+          contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 0), // Standard padding, less at bottom if actions are present
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                _buildDialogGameButton(
+                  text: 'Enter Coupon Code',
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    _showCouponInputDialog();
+                  },
+                ),
+                _buildDialogGameButton(
+                  text: payButtonText,
+                  onPressed: canPay
+                      ? () {
+                    Navigator.of(dialogContext).pop();
+                    _initiateInAppPurchase();
+                  }
+                      : null, // onPressed: null will be handled by _buildDialogGameButton opacity
+                ),
+              ],
+            ),
+          ),
+          actionsAlignment: MainAxisAlignment.center, // Center the cancel button
+          actions: <Widget>[
+            Padding( // Add some padding to the cancel button for better spacing
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: TextButton(
+                child: Text('Cancel', style: TextStyle(fontSize: screenWidth * 0.04, color: Theme.of(context).hintColor)), // Use a less prominent color
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+            ),
+          ],
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)), // Softer corners for dialog
+        );
+      },
+    );
+  }
+
+
+  void _navigateTo(int index, Widget screen) async {
     if (_controller.isAnimating || _selectedButtonIndex != null) return;
-    await _playUiClickSound(); // Play sound
+    await _playUiClickSound();
     if (!mounted) return;
     setState(() => _selectedButtonIndex = index);
     _controller.forward().then((_) {
@@ -251,7 +421,19 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     final double bottomScreenPadding = screenHeight * 0.02;
 
     final removeAdsProduct = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
-    final priceLabel = removeAdsProduct?.price ?? (_loading ? 'Loading...' : 'N/A');
+    String priceLabel = 'N/A';
+    if (_loading && !_storeAvailable) { // If still loading initial store availability
+      priceLabel = 'Loading Store...';
+    } else if (_loading && _storeAvailable && removeAdsProduct == null) { // If store available, but product query is loading
+      priceLabel = 'Loading Price...';
+    } else if (!_storeAvailable && !_loading) { // Store checked and not available
+      priceLabel = 'Store N/A';
+    } else if (removeAdsProduct != null) {
+      priceLabel = removeAdsProduct.price;
+    } else if (_storeAvailable && !_loading && removeAdsProduct == null) { // Store available, loaded, but product not found
+      priceLabel = 'Item N/A';
+    }
+
 
     return Scaffold(
       body: Stack(
@@ -275,9 +457,14 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   if (!_adsRemoved) ...[
                     _buildButton(
                       2,
-                      _loading ? 'Remove Ads (Loading...)' : 'Remove Ads ($priceLabel)',
-                      _startRemoveAdsPurchase,
-                      disabled: _loading || _purchasePending || removeAdsProduct == null,
+                      _purchasePending
+                          ? 'Remove Ads (Processing...)'
+                          : 'Remove Ads ($priceLabel)',
+                      _showRemoveAdsOptionsDialog,
+                      disabled: _purchasePending ||
+                          (!_storeAvailable && !_loading) || // Store definitely not available
+                          (_storeAvailable && _loading && removeAdsProduct == null) || // Store available, products loading
+                          (_storeAvailable && !_loading && removeAdsProduct == null), // Store available, products loaded, item not found
                     ),
                   ] else ...[
                     SizedBox(
@@ -316,13 +503,13 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             top: topPadding,
             left: screenWidth * 0.03,
             child: SafeArea(
-              child: Material( // Added for consistent splash effect
+              child: Material(
                 color: Colors.transparent,
                 child: IconButton(
                   icon: Icon(Icons.arrow_back, color: Colors.black, size: backIconSize),
-                  onPressed: () async { // Make async for sound
+                  onPressed: () async {
                     await _playUiClickSound();
-                    if (mounted) { // Check mounted before pop
+                    if (mounted) {
                       Navigator.pop(context);
                     }
                   },

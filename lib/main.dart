@@ -8,11 +8,12 @@ import 'package:device_preview/device_preview.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
-  runApp(
-    DevicePreview(
-      enabled: !kReleaseMode,
-      builder: (context) => const MyApp(),
-    ),
+  // runApp(
+  //   DevicePreview(
+  //     enabled: !kReleaseMode,
+  //     builder: (context) => const MyApp(),
+  //   ),
+  runApp(MyApp(),
   );
 }
 
@@ -90,7 +91,7 @@ class SplashScreenState extends State<SplashScreen> {
                     TypewriterAnimatedText(
                       'Callidora Global Media',
                       textStyle: TextStyle(
-                        fontSize: screenWidth * 0.04,
+                        fontSize: screenWidth * 0.06,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF000080),
                       ),

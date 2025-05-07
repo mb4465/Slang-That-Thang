@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // Ensure this is imported
-// Import your generation data file
-import '../screens/generation_data.dart';
+// FontAwesome and generation_data imports are removed as they are no longer used in this file.
 
 class CardBack extends StatelessWidget {
   final String term;
@@ -34,10 +32,7 @@ class CardBack extends StatelessWidget {
         final screenWidth = constraints.maxWidth;
         final screenHeight = constraints.maxHeight;
 
-        // Get the icon for the current generation
-        // The 'generation' string passed to CardBack must match the format expected by getIconForGeneration
-        // e.g., "Gen Z (1997 - 2012)"
-        final IconData? generationIcon = getIconForGeneration(generation);
+        // The generationIcon and getIconForGeneration call are removed as the icon is no longer displayed here.
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -51,9 +46,9 @@ class CardBack extends StatelessWidget {
                       key: ValueKey('image-container-$screenWidth-$screenHeight'),
                       width: screenWidth * 0.09,
                       height: screenHeight * 0.095,
-                      // Added FittedBox here as discussed in previous answers for the main image
                       child: FittedBox(
-                        fit: BoxFit.contain, // Or BoxFit.scaleDown
+                        // Changed to BoxFit.scaleDown for better consistency with various image sizes
+                        fit: BoxFit.scaleDown,
                         child: image,
                       )
                   ),
@@ -84,7 +79,7 @@ class CardBack extends StatelessWidget {
                           definition,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: screenWidth * 0.045, // Adjusted for definition length
+                            fontSize: screenWidth * 0.055, // Adjusted for definition length
                             color: Colors.white,
                           ),
                         ),
@@ -127,18 +122,13 @@ class CardBack extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.end, // Align to the right
                           children: [
-                            if (generationIcon != null)
-                              FaIcon(
-                                generationIcon,
-                                size: screenWidth * 0.065, // Responsive icon size
-                                color: Colors.white70,
-                              ),
-                            if (generationIcon != null) const SizedBox(height: 4),
+                            // Removed FaIcon for generation
+                            // Removed SizedBox for spacing
                             Text(
                               addNewlineBeforeBracket(generation),
                               textAlign: TextAlign.right, // Align text to the right
                               style: TextStyle(
-                                fontSize: screenWidth * 0.035, // Adjusted size
+                                fontSize: screenWidth * 0.045, // Increased size
                                 color: Colors.white,
                                 height: 1.2, // Line height for multi-line text
                               ),
