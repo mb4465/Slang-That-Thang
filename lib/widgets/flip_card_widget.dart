@@ -77,8 +77,8 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final double screenHeight = MediaQuery.of(context).size.height;
-    final double buttonWidth = screenWidth * 0.1; // 20% of screen width
-    final double buttonHeight = screenHeight * 0.04; // 8% of screen height
+    final double buttonWidth = screenWidth * 0.3; // 20% of screen width
+    final double buttonHeight = screenHeight * 0.06; // 8% of screen height
     final double iconSize = min(screenWidth, screenHeight) * 0.04; // responsive icon
 
     // Updated next button: wrapped in a Transform to match the required type

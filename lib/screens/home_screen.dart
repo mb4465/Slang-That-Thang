@@ -192,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     return Scaffold(
       body: Container(
-        color: Colors.white,
+        // color: Colors.white,
         child: Center(
           child: AnimatedBuilder(
             animation: Listenable.merge([_screenController, _borderAnimation, _shadowBlurAnimation, _shadowSpreadAnimation, _shadowOffsetAnimation]),

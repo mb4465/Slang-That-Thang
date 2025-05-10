@@ -406,121 +406,243 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     );
   }
 
+  // @override
+  // Widget build(BuildContext context) {
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final screenHeight = MediaQuery.of(context).size.height;
+  //   final double topPadding = screenHeight * 0.06;
+  //   final double backIconSize = screenWidth * 0.07;
+  //   final double titleFontSize = screenWidth * 0.085;
+  //   final double titleTopSpacing = screenHeight * 0.05;
+  //   final double titleBottomSpacing = screenHeight * 0.06;
+  //   final double buttonVerticalPadding = screenHeight * 0.015;
+  //   final double adsRemovedTextSize = screenWidth * 0.045;
+  //   final double errorTextSize = screenWidth * 0.035;
+  //   final double bottomScreenPadding = screenHeight * 0.02;
+  //
+  //   final removeAdsProduct = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
+  //   String priceLabel = 'N/A';
+  //   if (_loading && !_storeAvailable) { // If still loading initial store availability
+  //     priceLabel = 'Loading Store...';
+  //   } else if (_loading && _storeAvailable && removeAdsProduct == null) { // If store available, but product query is loading
+  //     priceLabel = 'Loading Price...';
+  //   } else if (!_storeAvailable && !_loading) { // Store checked and not available
+  //     priceLabel = 'Store N/A';
+  //   } else if (removeAdsProduct != null) {
+  //     priceLabel = removeAdsProduct.price;
+  //   } else if (_storeAvailable && !_loading && removeAdsProduct == null) { // Store available, loaded, but product not found
+  //     priceLabel = 'Item N/A';
+  //   }
+  //
+  //
+  //   return Scaffold(
+  //     body: Stack(
+  //       children: [
+  //         Center(
+  //           child: SingleChildScrollView(
+  //             padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+  //             child: Column(
+  //               mainAxisAlignment: MainAxisAlignment.center,
+  //               crossAxisAlignment: CrossAxisAlignment.center,
+  //               children: [
+  //                 SizedBox(height: titleTopSpacing + topPadding),
+  //                 Text('Menu', style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold)),
+  //                 SizedBox(height: titleBottomSpacing),
+  //
+  //                 _buildButton(0, 'How to Play', () => _navigateTo(0, const Howtoplay())),
+  //                 SizedBox(height: buttonVerticalPadding),
+  //                 _buildButton(1, 'Generational Card', () => _navigateTo(1, const GenerationalCardScreen())),
+  //                 SizedBox(height: buttonVerticalPadding),
+  //
+  //                 if (!_adsRemoved) ...[
+  //                   _buildButton(
+  //                     2,
+  //                     _purchasePending
+  //                         ? 'Remove Ads (Processing...)'
+  //                         : 'Remove Ads ($priceLabel)',
+  //                     _showRemoveAdsOptionsDialog,
+  //                     disabled: _purchasePending ||
+  //                         (!_storeAvailable && !_loading) || // Store definitely not available
+  //                         (_storeAvailable && _loading && removeAdsProduct == null) || // Store available, products loading
+  //                         (_storeAvailable && !_loading && removeAdsProduct == null), // Store available, products loaded, item not found
+  //                   ),
+  //                 ] else ...[
+  //                   SizedBox(
+  //                     height: screenHeight * 0.07,
+  //                     child: Center(
+  //                       child: Text('Ads Removed!',
+  //                           style: TextStyle(
+  //                               fontSize: adsRemovedTextSize,
+  //                               color: Colors.green,
+  //                               fontWeight: FontWeight.bold)),
+  //                     ),
+  //                   ),
+  //                 ],
+  //                 SizedBox(height: buttonVerticalPadding),
+  //
+  //                 _buildButton(3, 'Settings', () => _navigateTo(3, const SettingsScreen())),
+  //                 SizedBox(height: buttonVerticalPadding),
+  //                 _buildButton(4, 'About', () => _navigateTo(4, const AboutScreen())),
+  //                 SizedBox(height: buttonVerticalPadding),
+  //
+  //                 if (_errorMessage != null)
+  //                   Padding(
+  //                     padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+  //                     child: Text(
+  //                       'Error: $_errorMessage',
+  //                       textAlign: TextAlign.center,
+  //                       style: TextStyle(color: Colors.red, fontSize: errorTextSize),
+  //                     ),
+  //                   ),
+  //                 SizedBox(height: bottomScreenPadding),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //         Positioned(
+  //           top: topPadding,
+  //           left: screenWidth * 0.03,
+  //           child: SafeArea(
+  //             child: Material(
+  //               color: Colors.transparent,
+  //               child: IconButton(
+  //                 icon: Icon(Icons.arrow_back, color: Colors.black, size: backIconSize),
+  //                 onPressed: () async {
+  //                   await _playUiClickSound();
+  //                   if (mounted) {
+  //                     Navigator.pop(context);
+  //                   }
+  //                 },
+  //                 padding: EdgeInsets.all(screenWidth * 0.02),
+  //                 splashRadius: backIconSize * 0.7,
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+// ... other imports and class definition
+
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final double topPadding = screenHeight * 0.06;
-    final double backIconSize = screenWidth * 0.07;
-    final double titleFontSize = screenWidth * 0.085;
-    final double titleTopSpacing = screenHeight * 0.05;
-    final double titleBottomSpacing = screenHeight * 0.06;
-    final double buttonVerticalPadding = screenHeight * 0.015;
-    final double adsRemovedTextSize = screenWidth * 0.045;
-    final double errorTextSize = screenWidth * 0.035;
-    final double bottomScreenPadding = screenHeight * 0.02;
+  final screenWidth = MediaQuery.of(context).size.width;
+  final screenHeight = MediaQuery.of(context).size.height;
+  final double topPadding = screenHeight * 0.06;
+  final double backIconSize = screenWidth * 0.07;
+  final double titleFontSize = screenWidth * 0.085;
+  final double titleTopSpacing = screenHeight * 0.05;
+  final double titleBottomSpacing = screenHeight * 0.06;
+  final double buttonVerticalPadding = screenHeight * 0.015;
+  final double adsRemovedTextSize = screenWidth * 0.045;
+  final double errorTextSize = screenWidth * 0.035;
+  final double bottomScreenPadding = screenHeight * 0.02;
 
-    final removeAdsProduct = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
-    String priceLabel = 'N/A';
-    if (_loading && !_storeAvailable) { // If still loading initial store availability
-      priceLabel = 'Loading Store...';
-    } else if (_loading && _storeAvailable && removeAdsProduct == null) { // If store available, but product query is loading
-      priceLabel = 'Loading Price...';
-    } else if (!_storeAvailable && !_loading) { // Store checked and not available
-      priceLabel = 'Store N/A';
-    } else if (removeAdsProduct != null) {
-      priceLabel = removeAdsProduct.price;
-    } else if (_storeAvailable && !_loading && removeAdsProduct == null) { // Store available, loaded, but product not found
-      priceLabel = 'Item N/A';
-    }
-
-
-    return Scaffold(
-      body: Stack(
-        children: [
-          Center(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: titleTopSpacing + topPadding),
-                  Text('Menu', style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold)),
-                  SizedBox(height: titleBottomSpacing),
-
-                  _buildButton(0, 'How to Play', () => _navigateTo(0, const Howtoplay())),
-                  SizedBox(height: buttonVerticalPadding),
-                  _buildButton(1, 'Generational Card', () => _navigateTo(1, const GenerationalCardScreen())),
-                  SizedBox(height: buttonVerticalPadding),
-
-                  if (!_adsRemoved) ...[
-                    _buildButton(
-                      2,
-                      _purchasePending
-                          ? 'Remove Ads (Processing...)'
-                          : 'Remove Ads ($priceLabel)',
-                      _showRemoveAdsOptionsDialog,
-                      disabled: _purchasePending ||
-                          (!_storeAvailable && !_loading) || // Store definitely not available
-                          (_storeAvailable && _loading && removeAdsProduct == null) || // Store available, products loading
-                          (_storeAvailable && !_loading && removeAdsProduct == null), // Store available, products loaded, item not found
-                    ),
-                  ] else ...[
-                    SizedBox(
-                      height: screenHeight * 0.07,
-                      child: Center(
-                        child: Text('Ads Removed!',
-                            style: TextStyle(
-                                fontSize: adsRemovedTextSize,
-                                color: Colors.green,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                  SizedBox(height: buttonVerticalPadding),
-
-                  _buildButton(3, 'Settings', () => _navigateTo(3, const SettingsScreen())),
-                  SizedBox(height: buttonVerticalPadding),
-                  _buildButton(4, 'About', () => _navigateTo(4, const AboutScreen())),
-                  SizedBox(height: buttonVerticalPadding),
-
-                  if (_errorMessage != null)
-                    Padding(
-                      padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
-                      child: Text(
-                        'Error: $_errorMessage',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.red, fontSize: errorTextSize),
-                      ),
-                    ),
-                  SizedBox(height: bottomScreenPadding),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            top: topPadding,
-            left: screenWidth * 0.03,
-            child: SafeArea(
-              child: Material(
-                color: Colors.transparent,
-                child: IconButton(
-                  icon: Icon(Icons.arrow_back, color: Colors.black, size: backIconSize),
-                  onPressed: () async {
-                    await _playUiClickSound();
-                    if (mounted) {
-                      Navigator.pop(context);
-                    }
-                  },
-                  padding: EdgeInsets.all(screenWidth * 0.02),
-                  splashRadius: backIconSize * 0.7,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  final removeAdsProduct = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
+  String priceLabel = 'N/A';
+  if (_loading && !_storeAvailable) {
+  priceLabel = 'Loading Store...';
+  } else if (_loading && _storeAvailable && removeAdsProduct == null) {
+  priceLabel = 'Loading Price...';
+  } else if (!_storeAvailable && !_loading) {
+  priceLabel = 'Store N/A';
+  } else if (removeAdsProduct != null) {
+  priceLabel = removeAdsProduct.price;
+  } else if (_storeAvailable && !_loading && removeAdsProduct == null) {
+  priceLabel = 'Item N/A';
   }
+
+  return Scaffold(
+  backgroundColor: Colors.white, // <--- ADD THIS LINE
+  body: Stack(
+  children: [
+  Center(
+  child: SingleChildScrollView(
+  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+  child: Column(
+  mainAxisAlignment: MainAxisAlignment.center,
+  crossAxisAlignment: CrossAxisAlignment.center,
+  children: [
+  SizedBox(height: titleTopSpacing + topPadding),
+  Text('Menu', style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold)),
+  SizedBox(height: titleBottomSpacing),
+
+  // ... (rest of your Column children)
+
+  _buildButton(0, 'How to Play', () => _navigateTo(0, const Howtoplay())),
+  SizedBox(height: buttonVerticalPadding),
+  _buildButton(1, 'Generational Card', () => _navigateTo(1, const GenerationalCardScreen())),
+  SizedBox(height: buttonVerticalPadding),
+
+  if (!_adsRemoved) ...[
+  _buildButton(
+  2,
+  _purchasePending
+  ? 'Remove Ads (Processing...)'
+      : 'Remove Ads ($priceLabel)',
+  _showRemoveAdsOptionsDialog,
+  disabled: _purchasePending ||
+  (!_storeAvailable && !_loading) ||
+  (_storeAvailable && _loading && removeAdsProduct == null) ||
+  (_storeAvailable && !_loading && removeAdsProduct == null),
+  ),
+  ] else ...[
+  SizedBox(
+  height: screenHeight * 0.07,
+  child: Center(
+  child: Text('Ads Removed!',
+  style: TextStyle(
+  fontSize: adsRemovedTextSize,
+  color: Colors.green,
+  fontWeight: FontWeight.bold)),
+  ),
+  ),
+  ],
+  SizedBox(height: buttonVerticalPadding),
+
+  _buildButton(3, 'Settings', () => _navigateTo(3, const SettingsScreen())),
+  SizedBox(height: buttonVerticalPadding),
+  _buildButton(4, 'About', () => _navigateTo(4, const AboutScreen())),
+  SizedBox(height: buttonVerticalPadding),
+
+  if (_errorMessage != null)
+  Padding(
+  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+  child: Text(
+  'Error: $_errorMessage',
+  textAlign: TextAlign.center,
+  style: TextStyle(color: Colors.red, fontSize: errorTextSize),
+  ),
+  ),
+  SizedBox(height: bottomScreenPadding),
+  ],
+  ),
+  ),
+  ),
+  Positioned(
+  top: topPadding,
+  left: screenWidth * 0.03,
+  child: SafeArea(
+  child: Material(
+  color: Colors.transparent,
+  child: IconButton(
+  icon: Icon(Icons.arrow_back, color: Colors.black, size: backIconSize),
+  onPressed: () async {
+  await _playUiClickSound();
+  if (mounted) {
+  Navigator.pop(context);
+  }
+  },
+  padding: EdgeInsets.all(screenWidth * 0.02),
+  splashRadius: backIconSize * 0.7,
+  ),
+  ),
+  ),
+  ),
+  ],
+  ),
+  );
+  }
+
 }

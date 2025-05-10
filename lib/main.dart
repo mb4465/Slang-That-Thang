@@ -8,12 +8,12 @@ import 'package:device_preview/device_preview.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
-  // runApp(
-  //   DevicePreview(
-  //     enabled: !kReleaseMode,
-  //     builder: (context) => const MyApp(),
-  //   ),
-  runApp(MyApp(),
+  runApp(
+    DevicePreview(
+      enabled: !kReleaseMode,
+      builder: (context) => const MyApp(),
+    ),
+  // runApp(MyApp(),
   );
 }
 
