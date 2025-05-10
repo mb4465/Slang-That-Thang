@@ -81,7 +81,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
     final double buttonHeight = screenHeight * 0.06; // 8% of screen height
     final double iconSize = min(screenWidth, screenHeight) * 0.04; // responsive icon
 
-    // Updated next button: wrapped in a Transform to match the required type
+    // Updated next button: wrapped in a Transform to match the required
     final nextButton = Transform(
       transform: Matrix4.identity(), // No skew transformation, just to match the expected type
       alignment: Alignment.center,
