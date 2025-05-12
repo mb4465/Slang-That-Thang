@@ -1,5 +1,3 @@
-
-
 import 'package:test2/data/globals.dart';
 
 final Map<String, List<Map<String, String>>> termsData = {
@@ -107,7 +105,7 @@ final Map<String, List<Map<String, String>>> termsData = {
     {"term": "Keep it 100", "definition": "to be honest, genuine, true to oneself"},
     {"term": "Lit", "definition": "amazing, exciting, fun"},
     {"term": "Low Key", "definition": "done quietly, secretly, liking without drawing attention"},
-    {"term": "No Chill", "definition": "someone who is hyper, overactive"},
+    {"term": "No Chill", "definition": "someone who is hyper, overactive, lacking restraint"},
     {"term": "Read", "definition": "to tell someone about themselves, pointing out flaws"},
     {"term": "Receipts", "definition": "proof or evidence, often screen shots"},
     {"term": "Ride or Die", "definition": "extremely loyal"},
@@ -120,7 +118,7 @@ final Map<String, List<Map<String, String>>> termsData = {
     {"term": "Snack", "definition": "an attractive person"},
     {"term": "Snatched", "definition": "looks good, perfect, or fashionable"},
     {"term": "Squad", "definition": "close group of friends"},
-    {"term": "Meme", "definition": "test, image, video, usually funny that is shared rapidly online"},
+    {"term": "Meme", "definition": "text, image, video, usually funny that is shared rapidly online"},
     {"term": "Squad Goals", "definition": "ideal qualities of a group of friends"},
     {"term": "Stan", "definition": "an obsessive fan"},
     {"term": "Tea", "definition": "gossip, act of sharing info"},
@@ -175,8 +173,8 @@ final Map<String, List<Map<String, String>>> termsData = {
     {"term": "Big Mood", "definition": "something that's intensely relatable"},
     {"term": "Bluepilled", "definition": "remaining in blissful ignorance"},
     {"term": "Boomer", "definition": "a dismissive term for an older person perceived as out of touch"},
-    {"term": "Boujee", "definition": "luxurious"},
-    {"term": "Brain Rot", "definition": "to much time online watching low quality content"},
+    {"term": "Boujee", "definition": "luxurious in a flashy way"},
+    {"term": "Brain Rot", "definition": "too much time online watching low quality content"},
     {"term": "Bruh", "definition": "casual for brother or bro"},
     {"term": "Cringe", "definition": "something embarrassing or awkward"},
     {"term": "Delulu", "definition": "delusional"},
@@ -189,7 +187,7 @@ final Map<String, List<Map<String, String>>> termsData = {
     {"term": "Glizzy", "definition": "hot dog"},
     {"term": "Gyatt", "definition": "exclamation to describe a large booty"},
     {"term": "Mad Sus", "definition": "very suspicious"},
-    {"term": "Mewing", "definition": "looking good"},
+    {"term": "Mewing", "definition": "jawline trick using tongue posture"},
     {"term": "Nom Nom", "definition": "hungry, to express affection"},
     {"term": "Noob", "definition": "someone new or inexperienced"},
     {"term": "Ohio", "definition": "something weird or cringy"},
@@ -252,7 +250,7 @@ final Map<String, List<Map<String, String>>> termsData = {
     {"term": "Woke", "definition": "being aware of perceived social injustices"},
     {"term": "Gas", "definition": "something cool or appealing"},
     {"term": "Cheeks", "definition": "something that is trash, bad"},
-    {"term": "Let them Cook", "definition": "something relatable"},
+    {"term": "Let them Cook", "definition": "let them do their thing – it’s working"},
     {"term": "Shook", "definition": "shocked, surprised"}
   ],
 };
