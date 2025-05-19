@@ -1,13 +1,15 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
-import 'package:audioplayers/audioplayers.dart'; // Add this import
-import 'package:test2/data/globals.dart';
-import 'package:test2/widgets/card_back.dart';
-import 'package:test2/widgets/card_front.dart';
+import 'package:audioplayers/audioplayers.dart';
+// Adjust the import path to your globals.dart file
+import '../data/globals.dart'; // Or your actual path
+import 'package:test2/widgets/card_back.dart'; // Assuming test2/widgets path
+import 'package:test2/widgets/card_front.dart'; // Assuming test2/widgets path
 
 class FlipCardWidget extends StatefulWidget {
+  // static bool _appHasSeenFirstFlip = false; // REMOVED
+
   const FlipCardWidget({
     super.key,
     required this.term,
@@ -21,8 +23,8 @@ class FlipCardWidget extends StatefulWidget {
   final VoidCallback onNextButtonPressed;
   final Image image;
   final String generation;
-  final String term; // Parameter for the term
-  final String definition; // Parameter for the definition
+  final String term;
+  final String definition;
   final Function(bool isFront)? onFlip;
 
   @override
@@ -32,58 +34,87 @@ class FlipCardWidget extends StatefulWidget {
 class FlipCardWidgetState extends State<FlipCardWidget> {
   final FlipCardController con = FlipCardController();
   final _flipDuration = Duration(milliseconds: 400);
-  bool _isFront = true; // Track the current side of the card
-  bool _isFlipping = false; // Track whether the card is currently flipping
+  bool _isFront = true;
+  bool _isFlipping = false;
   bool isSoundEnabled = true;
+  bool _currentAppHasSeenFirstFlip = false; // Local state to reflect global pref
+  bool _prefsLoaded = false;
+
 
   @override
   void initState() {
     super.initState();
-    getSoundEnabled().then((value) {
-      isSoundEnabled = value;
+    _loadInitialPrefs();
+  }
+
+  Future<void> _loadInitialPrefs() async {
+    bool sound = await getSoundEnabled();
+    bool seenFlip = await getAppHasSeenFirstFlip();
+    if (!mounted) return;
+    setState(() {
+      isSoundEnabled = sound;
+      _currentAppHasSeenFirstFlip = seenFlip;
+      _prefsLoaded = true;
     });
   }
+
 
   @override
   void dispose() {
     super.dispose();
   }
 
-  // Function to play flip sound
   void _playFlipSound() async {
-    AudioPlayer audioPlayer = AudioPlayer(); // Create a new instance for each sound
-    await audioPlayer.play(AssetSource('audio/card_flip.mp3')); // Play sound from assets
+    AudioPlayer audioPlayer = AudioPlayer();
+    await audioPlayer.play(AssetSource('audio/card_flip.mp3'));
   }
 
-  // Function to handle card flip
   void _handleFlip() async {
-    if (_isFlipping) return; // Exit if the card is already flipping
+    if (_isFlipping) return;
+    if (!_prefsLoaded) return; // Don't allow flip if prefs not loaded
 
-    _isFlipping = true; // Set flipping state to true
-    con.flipcard(); // Flip the card
-    setState(() {
-      _isFront = !_isFront; // Update the card's side
-    });
+    _isFlipping = true;
+
+    bool initialFlipState = _currentAppHasSeenFirstFlip;
+
+    if (!_currentAppHasSeenFirstFlip) {
+      await setAppHasSeenFirstFlip(true); // Persist the change
+      if (mounted) {
+        setState(() {
+          _currentAppHasSeenFirstFlip = true; // Update local state immediately
+        });
+      }
+    }
+
+    con.flipcard();
+    // This setState is primarily for _isFront, but also ensures rebuild if _currentAppHasSeenFirstFlip changed
+    if (mounted) {
+      setState(() {
+        _isFront = !_isFront;
+      });
+    }
+
+
     widget.onFlip?.call(_isFront);
-    // Play the flip sound after the animation completes
     isSoundEnabled ? _playFlipSound() : null;
-    // Wait for the flip animation to complete
     await Future.delayed(_flipDuration);
-
-    _isFlipping = false; // Reset flipping state
+    _isFlipping = false;
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_prefsLoaded) {
+      return const Center(child: CircularProgressIndicator()); // Or some placeholder
+    }
+
     final double screenWidth = MediaQuery.of(context).size.width;
     final double screenHeight = MediaQuery.of(context).size.height;
-    final double buttonWidth = screenWidth * 0.3; // 20% of screen width
-    final double buttonHeight = screenHeight * 0.06; // 8% of screen height
-    final double iconSize = min(screenWidth, screenHeight) * 0.04; // responsive icon
+    final double buttonWidth = screenWidth * 0.3;
+    final double buttonHeight = screenHeight * 0.06;
+    final double iconSize = min(screenWidth, screenHeight) * 0.04;
 
-    // Updated next button: wrapped in a Transform to match the required
     final nextButton = Transform(
-      transform: Matrix4.identity(), // No skew transformation, just to match the expected type
+      transform: Matrix4.identity(),
       alignment: Alignment.center,
       child: SizedBox(
         width: buttonWidth,
@@ -96,8 +127,8 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            padding: EdgeInsets.zero, // Remove default padding
-            alignment: Alignment.center, // Force center alignment
+            padding: EdgeInsets.zero,
+            alignment: Alignment.center,
           ),
           onPressed: widget.onNextButtonPressed,
           child: Icon(
@@ -110,7 +141,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
     );
 
     return GestureDetector(
-      onTap: _handleFlip, // Flip the card on tap
+      onTap: _handleFlip,
       child: Stack(
         children: [
           Material(
@@ -119,13 +150,16 @@ class FlipCardWidgetState extends State<FlipCardWidget> {
               rotateSide: RotateSide.right,
               disableSplashEffect: false,
               splashColor: Colors.orange,
-              onTapFlipping: false, // Disable default tap flipping
+              onTapFlipping: false,
               axis: FlipAxis.vertical,
               controller: con,
               frontWidget: SizedBox(
                 width: screenWidth,
                 height: screenHeight,
-                child: CardFront(term: widget.term, button: nextButton),
+                child: CardFront(
+                  term: widget.term,
+                  showInitialFlipHint: !_currentAppHasSeenFirstFlip,
+                ),
               ),
               backWidget: SizedBox(
                 width: screenWidth,

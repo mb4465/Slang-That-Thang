@@ -13,8 +13,7 @@ class Howtoplay extends StatefulWidget {
 class _HowToPlayState extends State<Howtoplay> {
   int _currentImageIndex = 0;
   final List<String> _imagePaths = [
-    'assets/images/basics.svg',
-    'assets/images/objective.svg',
+    'assets/images/basics-objectives.svg',
     'assets/images/how-to-play.svg',
   ];
 
