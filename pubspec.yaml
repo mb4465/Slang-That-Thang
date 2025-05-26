@@ -93,6 +93,9 @@ flutter:
     - assets/audio/click.mp3
     - assets/audio/rules.mp3
     - assets/audio/click_sound.mp3
+    - assets/images/pointing.svg
+    - assets/images/basics-objectives.svg
+    - assets/images/how-to-play.svg
 
   # assets:
   #   - images/a_dot_burr.jpeg

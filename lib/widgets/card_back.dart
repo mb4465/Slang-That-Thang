@@ -1,13 +1,14 @@
+// lib/widgets/card_back.dart (or your actual path)
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-// FontAwesome and generation_data imports are removed as they are no longer used in this file.
 
 class CardBack extends StatelessWidget {
   final String term;
   final String definition;
   final String generation; // Expected format: "Generation Name (YYYY - YYYY)"
   final Image image;
-  final Transform button;
+  final Widget button; // This is the "Next" button widget passed from FlipCardWidget
+  final GlobalKey? nextButtonKey; // Key for the "Next" button, passed from FlipCardWidget
 
   const CardBack({
     super.key,
@@ -16,12 +17,13 @@ class CardBack extends StatelessWidget {
     required this.image,
     required this.generation,
     required this.button,
+    this.nextButtonKey,
   });
 
   String addNewlineBeforeBracket(String input) {
     final bracketIndex = input.indexOf('(');
     return bracketIndex != -1
-        ? '${input.substring(0, bracketIndex).trim()}\n${input.substring(bracketIndex)}' // Trim before newline
+        ? '${input.substring(0, bracketIndex).trim()}\n${input.substring(bracketIndex)}'
         : input;
   }
 
@@ -32,7 +34,14 @@ class CardBack extends StatelessWidget {
         final screenWidth = constraints.maxWidth;
         final screenHeight = constraints.maxHeight;
 
-        // The generationIcon and getIconForGeneration call are removed as the icon is no longer displayed here.
+        final double termFontSize = screenWidth * 0.07;
+        final double definitionFontSize = screenWidth * 0.055;
+        final double generationFontSize = screenWidth * 0.045;
+        final double topImagePadding = screenHeight * 0.08;
+        final double bottomButtonPadding = screenHeight * 0.08;
+        final double bottomIconPadding = screenHeight * 0.04;
+        final double sidePadding = screenWidth * 0.05;
+        final double slangIconSize = screenHeight * 0.07;
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -41,32 +50,31 @@ class CardBack extends StatelessWidget {
               Align(
                 alignment: Alignment.topCenter,
                 child: Padding(
-                  padding: EdgeInsets.only(top: screenHeight * 0.08), // Responsive top padding
+                  padding: EdgeInsets.only(top: topImagePadding),
                   child: SizedBox(
-                      key: ValueKey('image-container-$screenWidth-$screenHeight'),
-                      width: screenWidth * 0.09,
-                      height: screenHeight * 0.095,
-                      child: FittedBox(
-                        // Changed to BoxFit.scaleDown for better consistency with various image sizes
-                        fit: BoxFit.scaleDown,
-                        child: image,
-                      )
+                    key: ValueKey('card-back-image-${image.hashCode}'), // CORRECTED: Use 'image'
+                    width: screenWidth * 0.09,
+                    height: screenHeight * 0.095,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: image, // CORRECTED: Use 'image'
+                    ),
                   ),
                 ),
               ),
               Center(
-                child: SingleChildScrollView( // Added SingleChildScrollView for long terms/definitions
-                  padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: sidePadding * 0.75),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 15), // Reduced from 30
+                        padding: const EdgeInsets.symmetric(horizontal: 15),
                         child: Text(
-                          term,
+                          term, // CORRECTED: Use 'term'
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: screenWidth * 0.07, // Slightly smaller for potentially long terms
+                            fontSize: termFontSize,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
@@ -74,12 +82,12 @@ class CardBack extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 0), // No extra padding, outer padding handles it
+                        padding: const EdgeInsets.symmetric(horizontal: 0),
                         child: Text(
-                          definition,
+                          definition, // CORRECTED: Use 'definition'
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: screenWidth * 0.055, // Adjusted for definition length
+                            fontSize: definitionFontSize,
                             color: Colors.white,
                           ),
                         ),
@@ -91,18 +99,20 @@ class CardBack extends StatelessWidget {
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Padding(
-                  padding: EdgeInsets.only(bottom: screenHeight * 0.08), // Responsive bottom padding
-                  child: button,
+                  padding: EdgeInsets.only(bottom: bottomButtonPadding),
+                  child: RepaintBoundary(
+                    key: nextButtonKey, // CORRECTED: Use 'nextButtonKey'
+                    child: button, // CORRECTED: Use 'button'
+                  ),
                 ),
               ),
               Align(
                 alignment: Alignment.bottomLeft,
                 child: Padding(
-                  // Responsive padding for bottom left content
                   padding: EdgeInsets.only(
-                    left: screenWidth * 0.05,
-                    right: screenWidth * 0.05,
-                    bottom: screenHeight * 0.04,
+                    left: sidePadding,
+                    right: sidePadding,
+                    bottom: bottomIconPadding,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -110,27 +120,22 @@ class CardBack extends StatelessWidget {
                     children: [
                       SvgPicture.asset(
                         'assets/images/slang-icon.svg',
-                        height: screenHeight * 0.07, // Adjusted size
-                        width: screenHeight * 0.07,  // Adjusted size
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
+                        height: slangIconSize,
+                        width: slangIconSize,
+                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                       ),
-                      Flexible( // Allow generation info to take space but not overflow
+                      Flexible(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.end, // Align to the right
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            // Removed FaIcon for generation
-                            // Removed SizedBox for spacing
                             Text(
-                              addNewlineBeforeBracket(generation),
-                              textAlign: TextAlign.right, // Align text to the right
+                              addNewlineBeforeBracket(generation), // CORRECTED: Use 'generation'
+                              textAlign: TextAlign.right,
                               style: TextStyle(
-                                fontSize: screenWidth * 0.045, // Increased size
+                                fontSize: generationFontSize,
                                 color: Colors.white,
-                                height: 1.2, // Line height for multi-line text
+                                height: 1.2,
                               ),
                             ),
                           ],

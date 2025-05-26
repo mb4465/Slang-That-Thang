@@ -1,52 +1,259 @@
+// lib/widgets/card_front.dart
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../data/globals.dart'; // Adjust path as needed
+import 'tutorial_cutout_clipper.dart'; // IMPORT THE SHARED CLIPPER
+
+// Helper class for clamping animation values
+class ClampedAnimationDecorator extends Animation<double> {
+  ClampedAnimationDecorator(this.parent);
+
+  final Animation<double> parent;
+
+  @override
+  void addListener(VoidCallback listener) {
+    parent.addListener(listener);
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    parent.removeListener(listener);
+  }
+
+  @override
+  void addStatusListener(AnimationStatusListener listener) {
+    parent.addStatusListener(listener);
+  }
+
+  @override
+  void removeStatusListener(AnimationStatusListener listener) {
+    parent.removeStatusListener(listener);
+  }
+
+  @override
+  AnimationStatus get status => parent.status;
+
+  @override
+  double get value => parent.value.clamp(0.0, 1.0);
+}
+
+
+enum CardFrontTutorialStep {
+  none,
+  term,
+  generationIcon,
+  tapToFlip,
+}
 
 class CardFront extends StatefulWidget {
   final String term;
-  final bool showInitialFlipHint; // Renamed from hasFlippedOnce
+  final Function(CardFrontTutorialStep step) onTutorialStepChange;
+  final CardFrontTutorialStep initialTutorialStep;
 
   const CardFront({
     super.key,
     required this.term,
-    required this.showInitialFlipHint, // Updated parameter
+    required this.onTutorialStepChange,
+    required this.initialTutorialStep,
   });
 
   @override
   State<CardFront> createState() => _CardFrontState();
 }
 
-class _CardFrontState extends State<CardFront> {
+class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
   bool _showGenerationsOverlay = false;
-  bool _showTapToFlipHint = true; // Controls the opacity of the hint
+
+  // --- Tutorial State Variables ---
+  CardFrontTutorialStep _currentTutorialStep = CardFrontTutorialStep.none;
+  AnimationController? _tutorialAnimationController;
+  Animation<double>? _tutorialCircleScale;
+  Animation<double>? _tutorialCircleOpacity;
+  Animation<Offset>? _tutorialPointerOffset;
+  Animation<double>? _tutorialTextOpacity;
+  AnimationController? _handAnimationController;
+  Animation<Offset>? _handPositionAnimation;
+  Animation<double>? _handScaleAnimation;
+
+  final GlobalKey _termKey = GlobalKey();
+  final GlobalKey _generationIconKey = GlobalKey();
+  final GlobalKey _cardFrontStackKey = GlobalKey();
+
+  final Map<CardFrontTutorialStep, String> _tutorialTexts = {
+    CardFrontTutorialStep.term: "This is the Slang word whose meaning is to be guessed.",
+    CardFrontTutorialStep.generationIcon: "You can see the Generation rules here.",
+    CardFrontTutorialStep.tapToFlip: "Tap on the screen to flip the card and see the slang word meaning.",
+  };
+  // --- End Tutorial State Variables ---
 
   @override
   void initState() {
     super.initState();
-    // Set initial visibility based on the prop
-    _showTapToFlipHint = widget.showInitialFlipHint;
+    _currentTutorialStep = widget.initialTutorialStep;
+    _initTutorialAnimations();
+    _initHandAnimation();
+
+    if (_currentTutorialStep != CardFrontTutorialStep.none) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _tutorialAnimationController?.repeat();
+          if (_currentTutorialStep == CardFrontTutorialStep.tapToFlip) {
+            _handAnimationController?.repeat(reverse: false);
+          }
+        }
+      });
+    }
   }
 
   @override
   void didUpdateWidget(covariant CardFront oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If the hint was shown but now shouldn't be (because the global flag changed)
-    if (oldWidget.showInitialFlipHint && !widget.showInitialFlipHint) {
+    if (widget.initialTutorialStep != oldWidget.initialTutorialStep ||
+        widget.initialTutorialStep != _currentTutorialStep) { // Also check if internal state diverged
       setState(() {
-        _showTapToFlipHint = false; // Trigger fade out
+        _currentTutorialStep = widget.initialTutorialStep;
+        if (_currentTutorialStep != CardFrontTutorialStep.none) {
+          _tutorialAnimationController?.reset();
+          _tutorialAnimationController?.repeat();
+          if (_currentTutorialStep == CardFrontTutorialStep.tapToFlip) {
+            _handAnimationController?.reset();
+            _handAnimationController?.repeat(reverse: false);
+          } else {
+            _handAnimationController?.stop();
+            _handAnimationController?.reset();
+          }
+        } else {
+          _tutorialAnimationController?.stop();
+          _tutorialAnimationController?.reset();
+          _handAnimationController?.stop();
+          _handAnimationController?.reset();
+        }
       });
     }
-    // If the prop changes for other reasons, ensure hint visibility matches
-    else if (widget.showInitialFlipHint != _showTapToFlipHint) {
-      setState(() {
-        _showTapToFlipHint = widget.showInitialFlipHint;
-      });
+  }
+
+  void _initTutorialAnimations() {
+    _tutorialAnimationController?.dispose();
+    _tutorialAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1800),
+      vsync: this,
+    );
+
+    // Wrap the controller for use with TweenSequences if its direct value might be problematic
+    // For Curves.linear or direct controller, clamping is less critical but good for consistency
+    final clampedTutorialController = ClampedAnimationDecorator(_tutorialAnimationController!);
+    final curvedTutorialParentLinear = CurvedAnimation(parent: _tutorialAnimationController!, curve: Curves.linear);
+    final clampedCurvedTutorialParentLinear = ClampedAnimationDecorator(curvedTutorialParentLinear);
+
+
+    _tutorialCircleScale = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _tutorialAnimationController!, curve: const Interval(0.0, 0.7, curve: Curves.easeInOut)),
+    );
+
+    _tutorialCircleOpacity = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.7), weight: 15),
+      TweenSequenceItem(tween: ConstantTween(0.7), weight: 40),
+      TweenSequenceItem(tween: Tween(begin: 0.7, end: 0.0), weight: 45),
+    ]).animate(clampedCurvedTutorialParentLinear); // Used clamped parent
+
+    _tutorialPointerOffset = Tween<Offset>(begin: const Offset(0, 5), end: const Offset(0, -5)).animate(
+      CurvedAnimation(parent: _tutorialAnimationController!, curve: const Interval(0.0, 1.0, curve: Curves.easeInOutCubic)),
+    );
+
+    _tutorialTextOpacity = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeIn)), weight: 20),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 60),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeOut)), weight: 20),
+    ]).animate(clampedTutorialController); // Used clamped parent
+  }
+
+  void _initHandAnimation() {
+    _handAnimationController?.dispose();
+    _handAnimationController = AnimationController(
+        duration: const Duration(milliseconds: 1200), vsync: this);
+
+    final curvedHandPositionParent = CurvedAnimation(parent: _handAnimationController!, curve: Curves.easeInOut);
+    final clampedHandPositionParent = ClampedAnimationDecorator(curvedHandPositionParent);
+
+    _handPositionAnimation = TweenSequence<Offset>([
+      TweenSequenceItem(tween: Tween(begin: const Offset(0.05, 0.05), end: const Offset(0, 0)), weight: 30),
+      TweenSequenceItem(tween: ConstantTween(const Offset(0,0)), weight: 40),
+      TweenSequenceItem(tween: Tween(begin: const Offset(0,0), end: const Offset(0.05, 0.05)), weight: 30),
+    ]).animate(clampedHandPositionParent); // Use the clamped animation
+
+    final curvedHandScaleParent = CurvedAnimation(parent: _handAnimationController!, curve: Curves.elasticOut);
+    final clampedHandScaleParent = ClampedAnimationDecorator(curvedHandScaleParent);
+
+    _handScaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.85), weight: 15),
+      TweenSequenceItem(tween: ConstantTween(0.85), weight: 10),
+      TweenSequenceItem(tween: Tween(begin: 0.85, end: 1.0), weight: 15),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 60),
+    ]).animate(clampedHandScaleParent); // Use the clamped animation
+  }
+
+  void _advanceTutorialStep() async {
+    if (!mounted) return;
+    CardFrontTutorialStep nextStep = CardFrontTutorialStep.none;
+
+    switch (_currentTutorialStep) {
+      case CardFrontTutorialStep.term:
+        await setHasSeenCardFrontTermTutorial(true);
+        if (!await getHasSeenCardFrontGenerationTutorial()) {
+          nextStep = CardFrontTutorialStep.generationIcon;
+        } else if (!await getHasSeenCardFrontTapToFlipTutorial()) {
+          nextStep = CardFrontTutorialStep.tapToFlip;
+        }
+        break;
+      case CardFrontTutorialStep.generationIcon:
+        await setHasSeenCardFrontGenerationTutorial(true);
+        if (!await getHasSeenCardFrontTapToFlipTutorial()) {
+          nextStep = CardFrontTutorialStep.tapToFlip;
+        }
+        break;
+      case CardFrontTutorialStep.tapToFlip:
+        await setHasSeenCardFrontTapToFlipTutorial(true);
+        nextStep = CardFrontTutorialStep.none;
+        break;
+      case CardFrontTutorialStep.none:
+        return;
     }
+
+    setState(() {
+      _currentTutorialStep = nextStep;
+      widget.onTutorialStepChange(nextStep);
+
+      if (nextStep != CardFrontTutorialStep.none) {
+        _tutorialAnimationController?.reset();
+        _tutorialAnimationController?.repeat();
+        if (nextStep == CardFrontTutorialStep.tapToFlip) {
+          _handAnimationController?.reset();
+          _handAnimationController?.repeat(reverse: false);
+        } else {
+          _handAnimationController?.stop();
+          _handAnimationController?.reset();
+        }
+      } else {
+        _tutorialAnimationController?.stop();
+        _tutorialAnimationController?.reset();
+        _handAnimationController?.stop();
+        _handAnimationController?.reset();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tutorialAnimationController?.dispose();
+    _handAnimationController?.dispose();
+    super.dispose();
   }
 
   Widget _buildGenerationsOverlay(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-
     final overlayWidth = screenWidth * 0.85;
     final overlayMaxHeight = screenHeight * 0.7;
 
@@ -54,24 +261,17 @@ class _CardFrontState extends State<CardFront> {
       child: Material(
         elevation: 8.0,
         borderRadius: BorderRadius.circular(16.0),
+        color: Colors.white,
         child: Container(
           width: overlayWidth,
-          constraints: BoxConstraints(
-            maxHeight: overlayMaxHeight,
-            minWidth: 280,
-          ),
+          constraints: BoxConstraints(maxHeight: overlayMaxHeight, minWidth: 280),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              )
-            ],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Align(
                 alignment: Alignment.topRight,
@@ -81,9 +281,10 @@ class _CardFrontState extends State<CardFront> {
                     icon: Icon(Icons.close, color: Colors.black54),
                     tooltip: 'Close',
                     onPressed: () {
-                      setState(() {
-                        _showGenerationsOverlay = false;
-                      });
+                      if (_currentTutorialStep == CardFrontTutorialStep.generationIcon) {
+                        _advanceTutorialStep();
+                      }
+                      setState(() { _showGenerationsOverlay = false; });
                     },
                   ),
                 ),
@@ -91,10 +292,7 @@ class _CardFrontState extends State<CardFront> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
-                  child: SvgPicture.asset(
-                    'assets/images/generations.svg',
-                    fit: BoxFit.contain,
-                  ),
+                  child: SvgPicture.asset('assets/images/generations.svg', fit: BoxFit.contain),
                 ),
               ),
             ],
@@ -104,15 +302,274 @@ class _CardFrontState extends State<CardFront> {
     );
   }
 
+  Widget _buildCardFrontTutorialOverlayWidget() {
+    if (_tutorialAnimationController == null || _currentTutorialStep == CardFrontTutorialStep.none) {
+      return const SizedBox.shrink();
+    }
+
+    GlobalKey? currentTargetKey;
+    bool isHighlightCircular = false;
+    double highlightPadding = 0;
+
+    switch (_currentTutorialStep) {
+      case CardFrontTutorialStep.term:
+        currentTargetKey = _termKey;
+        highlightPadding = 10.0 * (MediaQuery.of(context).size.width / 400);
+        break;
+      case CardFrontTutorialStep.generationIcon:
+        currentTargetKey = _generationIconKey;
+        isHighlightCircular = true;
+        highlightPadding = 8.0 * (MediaQuery.of(context).size.width / 400);
+        break;
+      case CardFrontTutorialStep.tapToFlip:
+        return _buildTapToFlipOverlay();
+      default:
+        return const SizedBox.shrink();
+    }
+
+    if (currentTargetKey.currentContext == null || _cardFrontStackKey.currentContext == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() {}); });
+      return Positioned.fill(child: Container(color: Colors.black.withOpacity(0.7), child: Center(child: Text("Initializing hint...", style: TextStyle(color: Colors.white, decoration: TextDecoration.none, fontSize: 14)))));
+    }
+
+    final RenderBox? targetRenderBox = currentTargetKey.currentContext!.findRenderObject() as RenderBox?;
+    final RenderBox? ancestorRenderBox = _cardFrontStackKey.currentContext!.findRenderObject() as RenderBox?;
+
+    if (targetRenderBox == null || !targetRenderBox.attached || ancestorRenderBox == null || !ancestorRenderBox.attached) {
+      WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() {}); });
+      return Positioned.fill(child: Container(color: Colors.black.withOpacity(0.7), child: Center(child: Text("Waiting for element...", style: TextStyle(color: Colors.white, decoration: TextDecoration.none, fontSize: 14)))));
+    }
+
+    final Offset targetPositionInStack = targetRenderBox.localToGlobal(Offset.zero, ancestor: ancestorRenderBox);
+    final Size targetSize = targetRenderBox.size;
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final double scaleFactor = screenWidth / 400;
+    final double hintTextFontSize = 16 * scaleFactor;
+    final double spotlightBorderWidth = 2.0 * scaleFactor;
+
+    final Offset targetCenter = Offset(targetPositionInStack.dx + targetSize.width / 2, targetPositionInStack.dy + targetSize.height / 2);
+    final double hintPaddingHorizontal = 12 * scaleFactor;
+    final double hintPaddingVertical = 8 * scaleFactor;
+    final double hintTextContainerBorderWidth = 1.0 * scaleFactor;
+    final double hintContainerCornerRadius = 8.0 * scaleFactor;
+
+    bool pointUpwards;
+    if (_currentTutorialStep == CardFrontTutorialStep.term) {
+      pointUpwards = false;
+    } else if (_currentTutorialStep == CardFrontTutorialStep.generationIcon) {
+      pointUpwards = targetCenter.dy > screenHeight * 0.3;
+    } else {
+      pointUpwards = targetCenter.dy > screenHeight * 0.6;
+    }
+
+    double estimatedTextHeight = (_tutorialTexts[_currentTutorialStep] ?? "").length > 40 ? hintTextFontSize * 3.0 : hintTextFontSize * 1.8;
+    double estimatedHintBlockHeight = estimatedTextHeight + (hintPaddingVertical * 2);
+    double verticalOffsetSpacing = 15 * scaleFactor;
+
+    double hintBlockVerticalOffsetFromTargetCenter = pointUpwards
+        ? -(targetSize.height / 2 + estimatedHintBlockHeight * 0.5 + verticalOffsetSpacing)
+        : (targetSize.height / 2 + verticalOffsetSpacing);
+
+    double initialHintBlockTopPosition = targetCenter.dy + hintBlockVerticalOffsetFromTargetCenter;
+
+    double hintBlockLeftPosition = 20 * scaleFactor;
+    double? hintBlockRightPosition = 20 * scaleFactor;
+
+    if (_currentTutorialStep == CardFrontTutorialStep.generationIcon) {
+      hintBlockRightPosition = null;
+      hintBlockLeftPosition = max(20 * scaleFactor, targetCenter.dx - (targetSize.width / 2) - (screenWidth * 0.6) - (10 * scaleFactor));
+    }
+
+    final double topSafeArea = MediaQuery.of(context).padding.top + (10 * scaleFactor);
+    final double bottomSafeArea = screenHeight - MediaQuery.of(context).padding.bottom - (10 * scaleFactor);
+
+    return Positioned.fill(
+      child: GestureDetector(
+        onTap: _advanceTutorialStep,
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_tutorialAnimationController!, _tutorialPointerOffset!]),
+          builder: (context, child) {
+            final double currentAnimatedScale = _tutorialCircleScale!.value;
+
+            double animatedHighlightWidth = (targetSize.width + highlightPadding * 2) * currentAnimatedScale;
+            double animatedHighlightHeight = (targetSize.height + highlightPadding * 2) * currentAnimatedScale;
+            if (isHighlightCircular) {
+              animatedHighlightWidth = (max(targetSize.width, targetSize.height) + highlightPadding * 2) * currentAnimatedScale;
+              animatedHighlightHeight = animatedHighlightWidth;
+            }
+
+            final BorderRadius animatedHighlightBorderRadius = isHighlightCircular
+                ? BorderRadius.circular(animatedHighlightWidth / 2)
+                : BorderRadius.circular(8.0 * currentAnimatedScale * scaleFactor);
+
+            final Rect cutoutRect = Rect.fromCenter(center: targetCenter, width: animatedHighlightWidth, height: animatedHighlightHeight);
+            double currentHintBlockTopPosition = initialHintBlockTopPosition + _tutorialPointerOffset!.value.dy;
+
+            if (currentHintBlockTopPosition < topSafeArea) currentHintBlockTopPosition = topSafeArea;
+            else if (currentHintBlockTopPosition + estimatedHintBlockHeight > bottomSafeArea) {
+              if (!pointUpwards && (targetCenter.dy - targetSize.height / 2 - estimatedHintBlockHeight - verticalOffsetSpacing) > topSafeArea) {
+                double newHintBlockVerticalOffset = -(targetSize.height / 2 + estimatedHintBlockHeight * 0.5 + verticalOffsetSpacing);
+                currentHintBlockTopPosition = targetCenter.dy + newHintBlockVerticalOffset + _tutorialPointerOffset!.value.dy;
+                if (currentHintBlockTopPosition < topSafeArea) currentHintBlockTopPosition = topSafeArea;
+              } else { currentHintBlockTopPosition = bottomSafeArea - estimatedHintBlockHeight; }
+            }
+            if (currentHintBlockTopPosition < topSafeArea) currentHintBlockTopPosition = topSafeArea;
+
+            double currentHintBlockLeft = hintBlockLeftPosition;
+            double? currentHintBlockRight = hintBlockRightPosition;
+            double? textWidthConstraint;
+
+            if (_currentTutorialStep == CardFrontTutorialStep.generationIcon) {
+              textWidthConstraint = screenWidth * 0.55;
+              final tempTextPainter = TextPainter(
+                  text: TextSpan(text: _tutorialTexts[_currentTutorialStep], style: TextStyle(fontSize: hintTextFontSize)),
+                  textDirection: TextDirection.ltr)..layout(maxWidth: textWidthConstraint - hintPaddingHorizontal *2);
+              double estimatedTextContentWidth = tempTextPainter.width;
+              double estimatedContainerWidth = estimatedTextContentWidth + hintPaddingHorizontal * 2;
+
+              currentHintBlockLeft = targetCenter.dx - (targetSize.width/2) - estimatedContainerWidth - (15 * scaleFactor);
+              currentHintBlockRight = null;
+
+              if (currentHintBlockLeft < 20 * scaleFactor) {
+                currentHintBlockLeft = 20 * scaleFactor;
+              }
+            }
+
+            return Stack(
+              children: [
+                ClipPath(
+                  clipper: TutorialCutoutClipper(rect: cutoutRect, borderRadius: animatedHighlightBorderRadius, isCircular: isHighlightCircular),
+                  child: Container(color: Colors.black.withOpacity(0.80)),
+                ),
+                Positioned(
+                  left: cutoutRect.left, top: cutoutRect.top,
+                  child: Opacity(
+                    opacity: _tutorialCircleOpacity!.value,
+                    child: Container(
+                      width: cutoutRect.width, height: cutoutRect.height,
+                      decoration: BoxDecoration(
+                        shape: isHighlightCircular ? BoxShape.circle : BoxShape.rectangle,
+                        borderRadius: isHighlightCircular ? null : animatedHighlightBorderRadius,
+                        border: Border.all(color: Colors.white.withOpacity(0.8), width: spotlightBorderWidth),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: currentHintBlockLeft,
+                  right: currentHintBlockRight,
+                  top: currentHintBlockTopPosition,
+                  width: textWidthConstraint,
+                  child: Opacity(
+                    opacity: _tutorialTextOpacity!.value,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: hintPaddingHorizontal, vertical: hintPaddingVertical),
+                      decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(hintContainerCornerRadius),
+                          border: Border.all(color: Colors.white70, width: hintTextContainerBorderWidth)
+                      ),
+                      child: Text(
+                        _tutorialTexts[_currentTutorialStep] ?? "Hint",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: hintTextFontSize, fontWeight: FontWeight.w500, decoration: TextDecoration.none),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTapToFlipOverlay() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final double scaleFactor = screenWidth / 400;
+    final double hintTextFontSize = 18 * scaleFactor;
+    final double handIconSize = 60 * scaleFactor;
+
+    return Positioned.fill(
+      child: GestureDetector(
+        onTap: _advanceTutorialStep,
+        child: Container(
+          color: Colors.black.withOpacity(0.75),
+          child: AnimatedBuilder(
+            // Ensure all animations used here are initialized
+            animation: Listenable.merge([
+              if (_tutorialTextOpacity != null) _tutorialTextOpacity!,
+              if (_tutorialPointerOffset != null) _tutorialPointerOffset!,
+              if (_handAnimationController != null) _handAnimationController!,
+            ]),
+            builder: (context, child) {
+              double handScreenX = screenWidth * 0.5 - (handIconSize / 2);
+              double handScreenY = screenHeight * 0.55;
+
+              double animatedDx = (_handPositionAnimation?.value.dx ?? 0) * screenWidth * 0.1;
+              double animatedDy = (_handPositionAnimation?.value.dy ?? 0) * screenHeight * 0.1;
+
+              return Opacity(
+                opacity: _tutorialTextOpacity?.value ?? 0.0,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: handScreenX + animatedDx,
+                      top: handScreenY + animatedDy,
+                      child: Transform.scale(
+                        scale: _handScaleAnimation?.value ?? 1.0,
+                        child: Icon(
+                          Icons.touch_app_outlined,
+                          size: handIconSize,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: screenHeight * 0.15 + (_tutorialPointerOffset?.value.dy ?? 0),
+                      left: 20 * scaleFactor,
+                      right: 20 * scaleFactor,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 18 * scaleFactor, vertical: 10 * scaleFactor),
+                        decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(10 * scaleFactor),
+                            border: Border.all(color: Colors.white70, width: 1.5 * scaleFactor)
+                        ),
+                        child: Text(
+                          _tutorialTexts[CardFrontTutorialStep.tapToFlip] ?? "Tap to flip",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: Colors.white, fontSize: hintTextFontSize, fontWeight: FontWeight.bold, decoration: TextDecoration.none),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final statusBarHeight = MediaQuery.of(context).padding.top;
     final screenWidth = MediaQuery.of(context).size.width;
     final double generationLogoSize = screenWidth * 0.085;
+    bool isTutorialActive = _currentTutorialStep != CardFrontTutorialStep.none;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
+        key: _cardFrontStackKey,
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -122,6 +579,7 @@ class _CardFrontState extends State<CardFront> {
                 children: [
                   Text(
                     widget.term,
+                    key: _termKey,
                     style: TextStyle(
                       fontSize: MediaQuery.of(context).size.width * 0.09,
                       fontWeight: FontWeight.bold,
@@ -148,49 +606,25 @@ class _CardFrontState extends State<CardFront> {
             top: statusBarHeight + 16.0,
             right: 16.0,
             child: InkWell(
+              key: _generationIconKey,
               onTap: () {
-                setState(() {
-                  _showGenerationsOverlay = true;
-                });
+                if (isTutorialActive && _currentTutorialStep == CardFrontTutorialStep.generationIcon) {
+                  _advanceTutorialStep();
+                } else if (!isTutorialActive) {
+                  setState(() { _showGenerationsOverlay = true; });
+                }
               },
               borderRadius: BorderRadius.circular(generationLogoSize / 2),
               child: SvgPicture.asset(
-                'assets/images/generation-icon.svg', // Ensure this path is correct
+                'assets/images/generation-icon.svg',
                 height: generationLogoSize,
                 width: generationLogoSize,
               ),
             ),
           ),
-          Positioned(
-            bottom: MediaQuery.of(context).size.height * 0.25,
-            left: 0,
-            right: 0,
-            child: AnimatedOpacity(
-              opacity: _showTapToFlipHint ? 1.0 : 0.0, // Controlled by local state
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeOut,
-              child: IgnorePointer(
-                ignoring: !_showTapToFlipHint,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.touch_app, size: 50, color: Colors.black54),
-                    SizedBox(height: 8),
-                    Text(
-                      'Tap to Flip',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
           if (_showGenerationsOverlay) _buildGenerationsOverlay(context),
+          if (_currentTutorialStep != CardFrontTutorialStep.none)
+            _buildCardFrontTutorialOverlayWidget(),
         ],
       ),
     );
