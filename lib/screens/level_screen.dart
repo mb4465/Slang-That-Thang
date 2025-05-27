@@ -1,3 +1,4 @@
+// lib/level_screen.dart
 import 'dart:io';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
@@ -5,7 +6,25 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:test2/data/terms_data.dart';
 import 'package:test2/data/globals.dart';
-import 'package:test2/widgets/flip_card_widget.dart';
+import 'package:test2/widgets/flip_card_widget.dart'; // Ensure this is the latest version
+
+// Helper class for card history
+class CardHistoryItem {
+  final String term;
+  final String definition;
+  final String icon;
+  final String generation;
+
+  CardHistoryItem({
+    required this.term,
+    required this.definition,
+    required this.icon,
+    required this.generation,
+  });
+}
+
+// Enum to define the animation style
+enum CardAnimationStyle { none, next, previous }
 
 class LevelScreen extends StatefulWidget {
   const LevelScreen({super.key});
@@ -15,19 +34,19 @@ class LevelScreen extends StatefulWidget {
 }
 
 class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin {
-  // Randomizer & controllers
   final Random _random = Random();
-  final PageController _pageController = PageController();
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _cardAnimationController;
 
   // Card data
-  late String _selectedGeneration;
-  late String _selectedTerm;
-  late String _selectedDefinition;
-  late String _selectedIcon;
+  late String _selectedGeneration = '';
+  late String _selectedTerm = '';
+  late String _selectedDefinition = '';
+  late String _selectedIcon = '';
 
-  bool isNextCard = true;
+  final List<CardHistoryItem> _cardHistory = [];
+  CardAnimationStyle _cardAnimationStyle = CardAnimationStyle.none;
+
   bool isCardFront = true;
 
   // Ad state
@@ -35,11 +54,8 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
   bool _isAdLoaded = false;
   bool _adsRemoved = false;
   int _cardCounter = 0;
-
-  // Sound
   bool isSoundEnabled = true;
 
-  /// Returns correct Ad Unit ID per platform
   String get _adUnitId {
     if (Platform.isAndroid) {
       return 'ca-app-pub-9195859305045271/9115537722';
@@ -52,8 +68,11 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
   @override
   void initState() {
     super.initState();
-    _getRandomTerm();
-    // load prefs
+    _cardAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _initializeFirstTerm();
     getSoundEnabled().then((v) => isSoundEnabled = v);
     getAdsRemovedStatus().then((v) {
       _adsRemoved = v;
@@ -61,105 +80,164 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
         _createInterstitialAd();
       }
     });
-    _cardAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
+  }
+
+  void _initializeFirstTerm() {
+    final generations = termsData.keys.toList();
+    _selectedGeneration = generations[_random.nextInt(generations.length)];
+    final termList = termsData[_selectedGeneration]!;
+    final termEntry = termList[_random.nextInt(termList.length)];
+    _selectedTerm = termEntry['term']!;
+    _selectedDefinition = termEntry['definition']!;
+    _selectedIcon = generationIcons[_selectedGeneration] ?? '';
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
     _audioPlayer.dispose();
     _cardAnimationController.dispose();
     _interstitialAd?.dispose();
     super.dispose();
   }
 
-  void _getRandomTerm() {
-    final generations = termsData.keys.toList();
-    _selectedGeneration = generations[_random.nextInt(generations.length)];
-    final termList = termsData[_selectedGeneration]!;
-    final term = termList[_random.nextInt(termList.length)];
-    setState(() {
-      _selectedTerm = term['term']!;
-      _selectedDefinition = term['definition']!;
-      _selectedIcon = generationIcons[_selectedGeneration] ?? '';
-    });
-  }
-
-  Future<void> _loadAndPlayAudio() async {
+  Future<void> _playAudio(String assetPath) async {
+    if (!isSoundEnabled) return;
     await _audioPlayer.stop();
-    await _audioPlayer.play(AssetSource('audio/next_card.mp3'));
-  }
-
-  void _onPageChanged(int index) {
-    _getRandomTerm();
+    await _audioPlayer.play(AssetSource(assetPath));
   }
 
   void _goToNextCard() {
-    if (isSoundEnabled) _loadAndPlayAudio();
+    _playAudio('audio/next_card.mp3');
     _cardCounter++;
 
-    // Show ad every 20 cards if not removed
     if (!_adsRemoved && _cardCounter >= 20 && _isAdLoaded && _interstitialAd != null) {
       _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-        onAdDismissedFullScreenContent: (ad) {
-          ad.dispose();
-          _createInterstitialAd();
-        },
-        onAdFailedToShowFullScreenContent: (ad, err) {
-          ad.dispose();
-          _createInterstitialAd();
-        },
+        onAdDismissedFullScreenContent: (ad) { ad.dispose(); _createInterstitialAd(); },
+        onAdFailedToShowFullScreenContent: (ad, err) { ad.dispose(); _createInterstitialAd(); },
       );
       _interstitialAd!.show();
       _cardCounter = 0;
     }
 
-    _cardAnimationController.forward().then((_) {
-      if (_pageController.hasClients) {
-        _pageController.nextPage(
-          duration: const Duration(milliseconds: 1),
-          curve: Curves.linear,
-        ).then((_) {
-          _cardAnimationController.reset();
-          if (mounted) setState(() {});
-        });
+    setState(() {
+      _cardAnimationStyle = CardAnimationStyle.next;
+      if (_selectedTerm.isNotEmpty) {
+        _cardHistory.add(CardHistoryItem(
+          term: _selectedTerm,
+          definition: _selectedDefinition,
+          icon: _selectedIcon,
+          generation: _selectedGeneration,
+        ));
+      }
+      final generations = termsData.keys.toList();
+      final newSelectedGeneration = generations[_random.nextInt(generations.length)];
+      final termList = termsData[newSelectedGeneration]!;
+      final termEntry = termList[_random.nextInt(termList.length)];
+      _selectedGeneration = newSelectedGeneration;
+      _selectedTerm = termEntry['term']!;
+      _selectedDefinition = termEntry['definition']!;
+      _selectedIcon = generationIcons[newSelectedGeneration] ?? '';
+    });
+
+    _cardAnimationController.forward(from: 0.0).then((_) {
+      if (mounted) {
+        _cardAnimationController.reset();
       }
     });
   }
 
-  Widget _buildAnimatedCard(Widget child) {
+  void _goToPreviousCard() {
+    if (_cardHistory.isNotEmpty) {
+      _playAudio('audio/previous_card.mp3');
+
+      final previousCardData = _cardHistory.removeLast();
+
+      setState(() {
+        _cardAnimationStyle = CardAnimationStyle.previous;
+        _selectedTerm = previousCardData.term;
+        _selectedDefinition = previousCardData.definition;
+        _selectedIcon = previousCardData.icon;
+        _selectedGeneration = previousCardData.generation;
+      });
+
+      _cardAnimationController.forward(from: 0.0).then((_) {
+        if (mounted) {
+          _cardAnimationController.reset();
+        }
+      });
+    } else {
+      print("No previous card in history.");
+    }
+  }
+
+  Widget _buildAnimatedCard(Widget cardContent) {
     return AnimatedBuilder(
       animation: _cardAnimationController,
+      child: cardContent,
       builder: (context, child) {
+        if (_cardAnimationStyle == CardAnimationStyle.none) {
+          return child!;
+        }
+
+        Offset oldCardOutEndOffset;
+        Offset newCardInBeginOffset;
+
+        if (_cardAnimationStyle == CardAnimationStyle.next) {
+          // DESIRED FOR NEXT: New card from BOTTOM to UP
+          // Old card should slide UP to make space
+          oldCardOutEndOffset = const Offset(0, -0.75); // Old card slides UP
+          // New card comes from BOTTOM
+          newCardInBeginOffset = const Offset(0, 1.0);
+        } else { // _cardAnimationStyle == CardAnimationStyle.previous
+          // DESIRED FOR PREVIOUS: New card (previous) from TOP to DOWN
+          // Old card should slide DOWN to make space
+          oldCardOutEndOffset = const Offset(0, 0.75);  // Old card slides DOWN
+          // New card (previous) comes from TOP
+          newCardInBeginOffset = const Offset(0, -1.0);
+        }
+
+        // Curve for outgoing element
+        final outCurve = CurvedAnimation(
+          parent: _cardAnimationController,
+          curve: Curves.easeInCubic,
+        );
+        // Curve for incoming element
+        final inCurve = CurvedAnimation(
+          parent: _cardAnimationController,
+          curve: const Interval(
+            0.2,
+            1.0,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
         return Stack(
           children: [
-            Positioned.fill(
-              child: FadeTransition(
-                opacity: Tween<double>(begin: 0, end: 1).animate(_cardAnimationController),
-                child: SlideTransition(
-                  position: Tween<Offset>(begin: const Offset(0,1), end: Offset.zero)
-                      .animate(CurvedAnimation(parent: _cardAnimationController, curve: Curves.easeInOut)),
-                  child: child,
-                ),
+            // "Old Card" (effect applied to the new content, making it look like old is leaving)
+            FadeTransition(
+              opacity: Tween<double>(begin: 1.0, end: 0.0).animate(outCurve),
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: Offset.zero,
+                  end: oldCardOutEndOffset,
+                ).animate(outCurve),
+                child: child,
               ),
             ),
-            Positioned.fill(
-              child: FadeTransition(
-                opacity: Tween<double>(begin: 1, end: 0).animate(_cardAnimationController),
-                child: SlideTransition(
-                  position: Tween<Offset>(begin: Offset.zero, end: const Offset(0,-0.5))
-                      .animate(CurvedAnimation(parent: _cardAnimationController, curve: Curves.easeInOut)),
-                  child: child,
-                ),
+            // "New Card"
+            FadeTransition(
+              opacity: Tween<double>(begin: 0.0, end: 1.0).animate(inCurve),
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: newCardInBeginOffset,
+                  end: Offset.zero,
+                ).animate(inCurve),
+                child: child,
               ),
             ),
           ],
         );
       },
-      child: child,
     );
   }
 
@@ -167,34 +245,27 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    final iconSize = screenHeight * 0.04; // About 32px on 800 height
-    final padding = screenWidth * 0.05;   // About 20px on 400 width
+    final iconSize = screenHeight * 0.04;
+    final padding = screenWidth * 0.05;
+
+    Widget currentCard = FlipCardWidget(
+      key: ValueKey(_selectedTerm + _selectedGeneration),
+      onNextButtonPressed: _goToNextCard,
+      onPreviousButtonPressed: _cardHistory.isNotEmpty ? _goToPreviousCard : null,
+      image: Image.asset(_selectedIcon.isNotEmpty ? _selectedIcon : 'assets/images/default_icon.png'),
+      term: _selectedTerm,
+      definition: _selectedDefinition,
+      generation: _selectedGeneration,
+      onFlip: (isFront) {
+        setState(() => isCardFront = isFront);
+      },
+    );
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          PageView.builder(
-            controller: _pageController,
-            physics: const NeverScrollableScrollPhysics(),
-            onPageChanged: _onPageChanged,
-            itemBuilder: (context, index) {
-              return _buildAnimatedCard(
-                FlipCardWidget(
-                  onNextButtonPressed: _goToNextCard,
-                  image: Image.asset(_selectedIcon),
-                  term: _selectedTerm,
-                  definition: _selectedDefinition,
-                  generation: _selectedGeneration,
-                  onFlip: (isFront) {
-                    setState(() => isCardFront = isFront);
-                  },
-                ),
-              );
-            },
-          ),
-
-          // Responsive Back Button
+          _buildAnimatedCard(currentCard),
           Positioned(
             top: MediaQuery.of(context).padding.top + screenHeight * 0.02,
             left: padding,
@@ -220,13 +291,8 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
       adUnitId: _adUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitialAd = ad;
-          _isAdLoaded = true;
-        },
-        onAdFailedToLoad: (error) {
-          debugPrint('Ad load failed: $error');
-        },
+        onAdLoaded: (ad) { _interstitialAd = ad; _isAdLoaded = true; },
+        onAdFailedToLoad: (error) { debugPrint('Ad load failed: $error'); },
       ),
     );
   }

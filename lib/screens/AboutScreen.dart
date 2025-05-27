@@ -128,7 +128,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       ),
                       SizedBox(height: spacing4),
                       Text(
-                        'Slang That Thang!! is an educational and entertaining game designed to bridge the gap between generations by exploring the evolution of slang. Test your knowledge of slang terms from different eras and see how well you understand the language of each generation.',
+                        'SLANG THAT THANG!! is an educational and entertaining game designed to bridge the gap between generations by exploring the evolution of slang. Test your knowledge of slang terms from different eras and see how well you understand the language of each generation.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: descriptionFontSize,

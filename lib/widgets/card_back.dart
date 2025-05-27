@@ -38,10 +38,17 @@ class CardBack extends StatelessWidget {
         final double definitionFontSize = screenWidth * 0.055;
         final double generationFontSize = screenWidth * 0.045;
         final double topImagePadding = screenHeight * 0.08;
-        final double bottomButtonPadding = screenHeight * 0.08;
+        // Original bottom padding for the button's container
+        final double originalBottomButtonPadding = screenHeight * 0.08;
         final double bottomIconPadding = screenHeight * 0.04;
         final double sidePadding = screenWidth * 0.05;
         final double slangIconSize = screenHeight * 0.07;
+
+        // --- MODIFICATION TO ELEVATE THE ENTIRE BUTTON ---
+        // Define an additional upward offset for the button.
+        // This value will be ADDED to the original bottom padding.
+        // Let's make it a percentage of the screen height, e.g., 2% higher.
+        final double buttonUpwardOffset = screenHeight * 0.02; // Adjust this factor as needed
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -52,12 +59,12 @@ class CardBack extends StatelessWidget {
                 child: Padding(
                   padding: EdgeInsets.only(top: topImagePadding),
                   child: SizedBox(
-                    key: ValueKey('card-back-image-${image.hashCode}'), // CORRECTED: Use 'image'
+                    key: ValueKey('card-back-image-${image.hashCode}'),
                     width: screenWidth * 0.09,
                     height: screenHeight * 0.095,
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: image, // CORRECTED: Use 'image'
+                      child: image,
                     ),
                   ),
                 ),
@@ -71,7 +78,7 @@ class CardBack extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 15),
                         child: Text(
-                          term, // CORRECTED: Use 'term'
+                          term,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: termFontSize,
@@ -84,7 +91,7 @@ class CardBack extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 0),
                         child: Text(
-                          definition, // CORRECTED: Use 'definition'
+                          definition,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: definitionFontSize,
@@ -99,10 +106,11 @@ class CardBack extends StatelessWidget {
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Padding(
-                  padding: EdgeInsets.only(bottom: bottomButtonPadding),
+                  // Adjust the bottom padding to include the upward offset
+                  padding: EdgeInsets.only(bottom: originalBottomButtonPadding + buttonUpwardOffset),
                   child: RepaintBoundary(
-                    key: nextButtonKey, // CORRECTED: Use 'nextButtonKey'
-                    child: button, // CORRECTED: Use 'button'
+                    key: nextButtonKey,
+                    child: button,
                   ),
                 ),
               ),
@@ -130,7 +138,7 @@ class CardBack extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              addNewlineBeforeBracket(generation), // CORRECTED: Use 'generation'
+                              addNewlineBeforeBracket(generation),
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                 fontSize: generationFontSize,
