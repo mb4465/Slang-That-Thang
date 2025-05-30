@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart'; // Import package_info_plus
 import 'package:audioplayers/audioplayers.dart'; // For sound
+import 'dart:math'; // For max function
 import '../data/globals.dart'; // Adjust path as per your project structure, for getSoundEnabled
 
 class AboutScreen extends StatefulWidget {
@@ -30,29 +31,17 @@ class _AboutScreenState extends State<AboutScreen> {
     }
   }
 
-  // Consistent helper function name (from GenerationalCardScreen)
   Future<void> _playUiClickSound() async {
-    // Assuming getSoundEnabled is available from globals.dart
-    // You might need to adjust this part based on your actual sound settings logic
-    bool soundEnabled = true; // Default to true or handle error if getSoundEnabled is not found
+    bool soundEnabled = true;
     try {
       soundEnabled = await getSoundEnabled();
     } catch (e) {
-      // Handle cases where getSoundEnabled might not be available or throws an error
-      // For example, if globals.dart or the function is not correctly set up
       debugPrint("Error getting sound preference: $e. Sound will be played by default.");
     }
 
     if (soundEnabled) {
       final player = AudioPlayer();
-      // According to new audioplayers versions, setReleaseMode(ReleaseMode.stop) is often not needed
-      // if you are playing a short sound and not looping.
-      // player.setReleaseMode(ReleaseMode.stop); // This can be ReleaseMode.release
       await player.play(AssetSource('audio/click.mp3'));
-      // It's good practice to release the player after use for short sounds if you create it each time
-      // However, if you play many sounds, consider a shared player instance.
-      // For simplicity and consistency with the example, we'll keep it like this.
-      // await player.dispose(); // Or use ReleaseMode.release
     }
   }
 
@@ -62,110 +51,128 @@ class _AboutScreenState extends State<AboutScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    // Dynamic values for back button (consistent with GenerationalCardScreen)
+    // Dynamic values for back button (consistent with GenerationalCardScreen logic, but positions may differ from MenuScreen)
     final double backButtonTopPadding = screenHeight * 0.05;
     final double backButtonLeftPadding = screenWidth * 0.05;
-    final double backIconSize = screenWidth * 0.075; // e.g., 30 on 400dp width
-    final double backButtonTouchPadding = screenWidth * 0.03; // e.g., 12 on 400dp width
+    final double backIconSize = screenWidth * 0.075;
+    final double backButtonTouchPadding = screenWidth * 0.03;
 
-    // Dynamic values for content
-    final double contentPadding = screenWidth * 0.06; // Approx 24 on 400dp width
+    // Content padding for the main scrollable area
+    final double contentHorizontalPadding = screenWidth * 0.06;
 
-    final double titleFontSize = screenWidth * 0.085; // Approx 34 on 400dp width (Original: 35)
-    final double appNameFontSize = screenWidth * 0.06;  // Approx 24 on 400dp width (Original: 24)
-    final double versionFontSize = screenWidth * 0.04;  // Approx 16 on 400dp width (Original: 16)
-    final double descriptionFontSize = screenWidth * 0.045; // Approx 18 on 400dp width (Original: 18)
-    final double copyrightFontSize = screenWidth * 0.035; // Approx 14 on 400dp width (Original: 14)
+    // Title properties - matching MenuScreen
+    final double titleFontSize = max(22.0, screenWidth * 0.085); // Matched MenuScreen
+    final double titleTopPosition = MediaQuery.of(context).padding.top + screenHeight * 0.02; // Matched MenuScreen
 
-    // Dynamic SizedBox heights (already percentage-based in original, keeping them)
-    final double spacing1 = screenHeight * 0.09; // Original: ~70
-    final double spacing2 = screenHeight * 0.06; // Original: ~50
-    final double spacing3 = screenHeight * 0.015; // Original: ~12
-    final double spacing4 = screenHeight * 0.03; // Original: ~24
-    final double spacing5 = screenHeight * 0.04; // Original: ~32
+    // Font sizes for other text elements
+    final double appNameFontSize = screenWidth * 0.06;
+    final double versionFontSize = screenWidth * 0.04;
+    final double descriptionFontSize = screenWidth * 0.045;
+    final double copyrightFontSize = screenWidth * 0.035;
+
+    // Spacing for the content within the Column
+    // This SizedBox pushes the content of the Column down to clear the absolutely positioned title.
+    // It includes space for the title, its top offset, and padding below it.
+    final double contentStartPaddingInColumn = titleTopPosition + titleFontSize + (screenHeight * 0.05); // Adjusted to match MenuScreen's content logic
+
+    // Spacings for items within the column, after the initial padding
+    final double spacingAfterAppName = screenHeight * 0.015; // Original spacing3
+    final double spacingAfterVersion = screenHeight * 0.03;  // Original spacing4
+    final double spacingAfterDescription = screenHeight * 0.04; // Original spacing5
+    final double bottomContentPadding = screenHeight * 0.02; // Extra padding at the bottom
 
     return Scaffold(
-      backgroundColor: Colors.white, // Explicitly set background color for the Scaffold
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           // Main content area
-          Container(
-            color: Colors.white, // Ensure background for the Center content
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.all(contentPadding),
-                child: SingleChildScrollView( // Added for very small screens or large text
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start, // Align to top
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(height: spacing1),
-                      Text(
-                        "About",
-                        style: TextStyle(
-                          fontSize: titleFontSize,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
+          Center( // Center the Padded SingleChildScrollView
+            child: Padding(
+              // Symmetrical horizontal padding for the content block
+              padding: EdgeInsets.symmetric(horizontal: contentHorizontalPadding),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // This SizedBox pushes content down to account for the absolutely positioned title
+                    SizedBox(height: contentStartPaddingInColumn),
+                    // SizedBox(height: screenHeight * 0.06), // This was spacing2, now incorporated into contentStartPaddingInColumn logic
+                    Text(
+                      _appName,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: appNameFontSize,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
-                      SizedBox(height: spacing2),
-                      Text(
-                        _appName,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: appNameFontSize,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
+                    ),
+                    SizedBox(height: spacingAfterAppName),
+                    Text(
+                      'Version: $_version',
+                      style: TextStyle(
+                        fontSize: versionFontSize,
+                        color: Colors.black,
                       ),
-                      SizedBox(height: spacing3),
-                      Text(
-                        'Version: $_version',
-                        style: TextStyle(
-                          fontSize: versionFontSize,
-                          color: Colors.black,
-                        ),
+                    ),
+                    SizedBox(height: spacingAfterVersion),
+                    Text(
+                      'SLANG THAT THANG!! is an educational and entertaining game designed to bridge the gap between generations by exploring the evolution of slang. Test your knowledge of slang terms from different eras and see how well you understand the language of each generation.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: descriptionFontSize,
+                        color: Colors.black,
                       ),
-                      SizedBox(height: spacing4),
-                      Text(
-                        'SLANG THAT THANG!! is an educational and entertaining game designed to bridge the gap between generations by exploring the evolution of slang. Test your knowledge of slang terms from different eras and see how well you understand the language of each generation.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: descriptionFontSize,
-                          color: Colors.black,
-                        ),
+                    ),
+                    SizedBox(height: spacingAfterDescription),
+                    Text(
+                      '© 2024 Callidora Global Media. All rights reserved.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: copyrightFontSize,
+                        color: Colors.black,
                       ),
-                      SizedBox(height: spacing5),
-                      Text(
-                        '© 2024 Callidora Global Media. All rights reserved.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: copyrightFontSize,
-                          color: Colors.black,
-                        ),
-                      ),
-                      SizedBox(height: screenHeight * 0.02), // Extra padding at the bottom if needed
-                    ],
+                    ),
+                    SizedBox(height: bottomContentPadding),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Positioned "About" Title - replicating MenuScreen's title
+          Positioned(
+            top: titleTopPosition,
+            left: 0,
+            right: 0,
+            child: SafeArea( // Using SafeArea as in MenuScreen title
+              // top: false, bottom: false, // Potentially if titleTopPosition already fully accounts for safe area
+              child: Center(
+                child: Text(
+                  "About",
+                  style: TextStyle(
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
                 ),
               ),
             ),
           ),
-          // Dynamic Back Button (consistent with GenerationalCardScreen)
+          // Dynamic Back Button (positioning logic kept from original AboutScreen, may differ from MenuScreen's back button)
           Positioned(
             top: backButtonTopPadding,
             left: backButtonLeftPadding,
-            child: SafeArea( // Ensures button is not obscured by notches/system UI
+            child: SafeArea(
               child: Material(
-                color: Colors.transparent, // For correct splash effect
+                color: Colors.transparent,
                 child: IconButton(
                   icon: Icon(Icons.arrow_back, color: Colors.black, size: backIconSize),
-                  padding: EdgeInsets.all(backButtonTouchPadding), // Larger touch target
-                  splashRadius: backIconSize, // Splash radius related to icon size
+                  padding: EdgeInsets.all(backButtonTouchPadding),
+                  splashRadius: backIconSize,
                   tooltip: 'Back',
                   onPressed: () async {
                     await _playUiClickSound();
-                    if (mounted) { // Good practice to check mounted before Navigator.pop
+                    if (mounted) {
                       Navigator.pop(context);
                     }
                   },

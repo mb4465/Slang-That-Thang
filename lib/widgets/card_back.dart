@@ -34,7 +34,7 @@ class CardBack extends StatelessWidget {
         final screenWidth = constraints.maxWidth;
         final screenHeight = constraints.maxHeight;
 
-        final double termFontSize = screenWidth * 0.07;
+        final double termFontSize = screenWidth * 0.08;
         final double definitionFontSize = screenWidth * 0.055;
         final double generationFontSize = screenWidth * 0.045;
         final double topImagePadding = screenHeight * 0.08;

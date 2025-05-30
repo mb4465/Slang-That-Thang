@@ -37,7 +37,7 @@ class GenerationalCardScreen extends StatelessWidget {
           // Main Content Image - Remove outer Padding to match Howtoplay
           Center( // This will center the SvgPicture in the available space
             child: SvgPicture.asset(
-              'assets/images/generations.svg',
+              'assets/images/generations-without-icon.svg',
               fit: BoxFit.contain,
               // If you still want some horizontal padding for the image but not top/bottom affecting centering:
               // You could wrap SvgPicture with a Padding(padding: EdgeInsets.symmetric(horizontal: consistentHorizontalPadding))
@@ -62,6 +62,20 @@ class GenerationalCardScreen extends StatelessWidget {
                     Navigator.pop(context);
                   }
                 },
+              ),
+            ),
+          ),
+
+          // Slang Icon (positioned at bottom-left, consistent with other screens)
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0), // 20px from left and bottom
+              child: SvgPicture.asset(
+                'assets/images/slang-icon.svg',
+                height: MediaQuery.of(context).size.height * 0.08, // 8% of screen height
+                width: MediaQuery.of(context).size.height * 0.08,  // 8% of screen height
+                colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn), // Ensure it's black
               ),
             ),
           ),

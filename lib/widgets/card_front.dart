@@ -61,7 +61,7 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
   final GlobalKey _cardFrontStackKey = GlobalKey();
 
   final Map<CardFrontTutorialStep, String> _tutorialTexts = {
-    CardFrontTutorialStep.term: "This is the Slang word whose meaning is to be guessed.",
+    CardFrontTutorialStep.term: "Use this icon to see the generations and their timeframes so you can guess which generation the slang word might come from for an extra point!",
     CardFrontTutorialStep.generationIcon: "You can see the Generation rules here.",
     CardFrontTutorialStep.tapToFlip: "Tap on the screen to flip the card and see the slang word meaning.",
   };
@@ -256,7 +256,7 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
-                  child: SvgPicture.asset('assets/images/generations.svg', fit: BoxFit.contain),
+                  child: SvgPicture.asset('assets/images/generations-icon.svg', fit: BoxFit.contain),
                 ),
               ),
             ],

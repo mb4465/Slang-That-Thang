@@ -13,8 +13,8 @@ class Howtoplay extends StatefulWidget {
 class _HowToPlayState extends State<Howtoplay> {
   int _currentImageIndex = 0;
   final List<String> _imagePaths = [
-    'assets/images/basics-objectives.svg',
-    'assets/images/how-to-play.svg',
+    'assets/images/basics-objectives-without-logo.svg',
+    'assets/images/how-to-play-without-logo.svg',
   ];
 
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -81,7 +81,7 @@ class _HowToPlayState extends State<Howtoplay> {
             decoration: const BoxDecoration(color: Colors.white),
             child: Center(
               child: SvgPicture.asset(
-              // child: Image.asset(
+                // child: Image.asset(
                 _imagePaths[_currentImageIndex],
                 fit: BoxFit.contain,
               ),
@@ -118,6 +118,20 @@ class _HowToPlayState extends State<Howtoplay> {
             child: IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.black, size: iconSize),
               onPressed: () => Navigator.pop(context),
+            ),
+          ),
+
+          // Slang Icon (positioned at bottom-left, as analyzed)
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0), // 20px from left and bottom
+              child: SvgPicture.asset(
+                'assets/images/slang-icon.svg',
+                height: MediaQuery.of(context).size.height * 0.08, // 8% of screen height
+                width: MediaQuery.of(context).size.height * 0.08,  // 8% of screen height
+                colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn), // Ensure it's black
+              ),
             ),
           ),
         ],

@@ -317,17 +317,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   Flexible(child: SingleChildScrollView(child: imageWidget ?? customContent ?? SizedBox.shrink())),
                                   const SizedBox(height: 25),
                                   ElevatedButton(onPressed: _advanceHomeScreenTutorial,
-                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: Colors.white, width: 1.5)),
+                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black, padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: Colors.black, width: 1.5)),
                                           textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                       child: Row(mainAxisSize: MainAxisSize.min, children: [Text("Next"), SizedBox(width: 8), Icon(Icons.arrow_forward_ios_rounded, size: 18)]))])))))));
   }
 
   Widget _buildWelcomeLayoutWidget() => _buildImageBasedTutorialLayout(title: "Welcome to", customContent: Column(mainAxisSize: MainAxisSize.min, children: [
-    Text("SLANG THAT TANG!!", textAlign: TextAlign.center, style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.black, letterSpacing: 1.2)),
+    Text("SLANG THAT THANG!!", textAlign: TextAlign.center, style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.black, letterSpacing: 1.2)),
     SizedBox(height: 20), Text("Get ready to test your slang knowledge!", textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Colors.black87))]));
   Widget _buildBasicsObjectiveLayoutWidget() => _buildImageBasedTutorialLayout(title: "Basics & Objectives", assetPath: 'assets/images/basics-objectives.png');
-  Widget _buildHowToPlayLayoutWidget() => _buildImageBasedTutorialLayout(title: "How to Play", assetPath: 'assets/images/how-to-play.png');
+  Widget _buildHowToPlayLayoutWidget() => _buildImageBasedTutorialLayout(title: "How to Play", assetPath: 'assets/images/tutorial-how-to-play.svg');
 
   Widget _buildButtonHighlightTutorialOverlayWidget() {
     if (_tutorialHintAnimationController == null || _currentHomeScreenTutorialStep == HomeScreenTutorialStep.none ||

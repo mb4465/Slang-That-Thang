@@ -105,11 +105,11 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
   final Map<MenuTutorialStep, String> tutorialTexts = {
     MenuTutorialStep.howToPlay: "You can see the game rules here.",
-    MenuTutorialStep.generationalCard: "You can see all Generations here.",
+    MenuTutorialStep.generationalCard: "Generations Card",
     MenuTutorialStep.removeAds:
-    "You'll see an ad after each 20 rounds. You can remove ads by paying or applying a promo code.",
+    "You get 20 rounds free. After that, you'll need to pay \$4.99 for Full Access.",
     MenuTutorialStep.settings: "You can mute/unmute all the sounds.",
-    MenuTutorialStep.about: "You can know more about SLANG THAT THANG!!",
+    MenuTutorialStep.about: "Learn more about SLANG THAT THANG!! and how to play!",
     MenuTutorialStep.backArrow: "Click the back arrow to go back.",
   };
 
@@ -765,11 +765,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     }
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final double topPaddingValue = MediaQuery.of(context).padding.top + screenHeight * 0.02; // Renamed to avoid conflict
-    final double backIconVisualSize = max(24.0, screenWidth * 0.07); // Renamed
+    final double topPaddingValue = MediaQuery.of(context).padding.top + screenHeight * 0.02;
+    final double backIconVisualSize = max(24.0, screenWidth * 0.07);
     final double titleFontSize = max(22.0, screenWidth * 0.085);
-    final double titleTopSpacing = screenHeight * 0.03;
-    final double titleBottomSpacing = screenHeight * 0.04;
     final double buttonVerticalPadding = screenHeight * 0.018;
     final double errorTextSize = max(12.0, screenWidth * 0.035);
     final double bottomScreenPadding = screenHeight * 0.02;
@@ -791,18 +789,14 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             child: SingleChildScrollView(
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start, // Changed to start to align content at the top
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(height: titleTopSpacing + topPaddingValue),
-                  Text('Menu', style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold, color: Colors.black)),
-                  SizedBox(height: titleBottomSpacing),
-
+                  SizedBox(height: topPaddingValue + titleFontSize + screenHeight * 0.05), // Space for title and padding
                   _buildButton(0, 'How to Play', () => _navigateTo(0, const Howtoplay()), key: _howToPlayKey),
                   SizedBox(height: buttonVerticalPadding),
                   _buildButton(1, 'Generational Card', () => _navigateTo(1, const GenerationalCardScreen()), key: _generationalCardKey),
                   SizedBox(height: buttonVerticalPadding),
-
                   _buildButton(
                     2,
                     _adsRemoved
@@ -819,7 +813,6 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   SizedBox(height: buttonVerticalPadding),
                   _buildButton(4, 'About', () => _navigateTo(4, const AboutScreen()), key: _aboutKey),
                   SizedBox(height: buttonVerticalPadding),
-
                   if (_errorMessage != null)
                     Padding(
                       padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
@@ -827,6 +820,23 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                     ),
                   SizedBox(height: bottomScreenPadding),
                 ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: topPaddingValue,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Center(
+                child: Text(
+                  'Menu',
+                  style: TextStyle(
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
               ),
             ),
           ),
@@ -841,11 +851,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   icon: Icon(Icons.arrow_back, color: Colors.black, size: backIconVisualSize),
                   onPressed: () async {
                     if (_currentMenuTutorialStep != MenuTutorialStep.none) {
-                      // If tutorial is active, pressing back arrow should always advance the tutorial
-                      // If it's the backArrow step itself, it will then also pop.
                       _advanceMenuTutorial();
-                      if (_currentMenuTutorialStep == MenuTutorialStep.none || // advanced to none (was backArrow)
-                          (!await getHasSeenMenuScreenTutorial() && _currentMenuTutorialStep == MenuTutorialStep.backArrow)) { // Special case: if somehow still on backArrow step after advance, pop
+                      if (_currentMenuTutorialStep == MenuTutorialStep.none ||
+                          (!await getHasSeenMenuScreenTutorial() && _currentMenuTutorialStep == MenuTutorialStep.backArrow)) {
                         await _playUiClickSound();
                         if (mounted) Navigator.pop(context);
                       }
