@@ -1,4 +1,4 @@
-// lib/widgets/card_back.dart (or your actual path)
+// lib/widgets/card_back.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -7,8 +7,10 @@ class CardBack extends StatelessWidget {
   final String definition;
   final String generation; // Expected format: "Generation Name (YYYY - YYYY)"
   final Image image;
-  final Widget button; // This is the "Next" button widget passed from FlipCardWidget
+  final Widget nextButton; // Renamed from `button` for clarity
+  final Widget? previousButton; // NEW: This is the "Previous" button widget passed from FlipCardWidget
   final GlobalKey? nextButtonKey; // Key for the "Next" button, passed from FlipCardWidget
+  final GlobalKey? previousButtonKey; // NEW: Key for the "Previous" button
 
   const CardBack({
     super.key,
@@ -16,8 +18,10 @@ class CardBack extends StatelessWidget {
     required this.definition,
     required this.image,
     required this.generation,
-    required this.button,
+    required this.nextButton, // Renamed
+    this.previousButton, // NEW
     this.nextButtonKey,
+    this.previousButtonKey, // NEW
   });
 
   String addNewlineBeforeBracket(String input) {
@@ -44,11 +48,11 @@ class CardBack extends StatelessWidget {
         final double sidePadding = screenWidth * 0.05;
         final double slangIconSize = screenHeight * 0.07;
 
-        // --- MODIFICATION TO ELEVATE THE ENTIRE BUTTON ---
-        // Define an additional upward offset for the button.
-        // This value will be ADDED to the original bottom padding.
-        // Let's make it a percentage of the screen height, e.g., 2% higher.
-        final double buttonUpwardOffset = screenHeight * 0.02; // Adjust this factor as needed
+        // --- MODIFICATION TO ELEVATE THE ENTIRE BUTTONS ROW ---
+        // Define an additional upward offset for the button row.
+        final double buttonsUpwardOffset = screenHeight * 0.05; // Adjust this factor as needed
+        final double totalBottomPaddingForButtons = originalBottomButtonPadding + buttonsUpwardOffset;
+
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -103,14 +107,28 @@ class CardBack extends StatelessWidget {
                   ),
                 ),
               ),
+              // NEW: Row for both buttons at the bottom center
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Padding(
                   // Adjust the bottom padding to include the upward offset
-                  padding: EdgeInsets.only(bottom: originalBottomButtonPadding + buttonUpwardOffset),
-                  child: RepaintBoundary(
-                    key: nextButtonKey,
-                    child: button,
+                  padding: EdgeInsets.only(bottom: totalBottomPaddingForButtons),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min, // Keep row as small as its children
+                    mainAxisAlignment: MainAxisAlignment.center, // Center the row itself
+                    children: [
+                      if (previousButton != null) // Only show previous button if provided
+                        RepaintBoundary(
+                          key: previousButtonKey,
+                          child: previousButton!,
+                        ),
+                      if (previousButton != null) // Add a gap between buttons if both exist
+                        SizedBox(width: screenWidth * 0.05), // Adjust spacing as needed
+                      RepaintBoundary(
+                        key: nextButtonKey, // The key for tutorial is still on this one
+                        child: nextButton,
+                      ),
+                    ],
                   ),
                 ),
               ),

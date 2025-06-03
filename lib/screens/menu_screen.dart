@@ -795,7 +795,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   SizedBox(height: topPaddingValue + titleFontSize + screenHeight * 0.05), // Space for title and padding
                   _buildButton(0, 'How to Play', () => _navigateTo(0, const Howtoplay()), key: _howToPlayKey),
                   SizedBox(height: buttonVerticalPadding),
-                  _buildButton(1, 'Generational Card', () => _navigateTo(1, const GenerationalCardScreen()), key: _generationalCardKey),
+                  _buildButton(1, 'Generations', () => _navigateTo(1, const GenerationalCardScreen()), key: _generationalCardKey),
                   SizedBox(height: buttonVerticalPadding),
                   _buildButton(
                     2,

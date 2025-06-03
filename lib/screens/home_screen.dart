@@ -326,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildWelcomeLayoutWidget() => _buildImageBasedTutorialLayout(title: "Welcome to", customContent: Column(mainAxisSize: MainAxisSize.min, children: [
     Text("SLANG THAT THANG!!", textAlign: TextAlign.center, style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.black, letterSpacing: 1.2)),
     SizedBox(height: 20), Text("Get ready to test your slang knowledge!", textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Colors.black87))]));
-  Widget _buildBasicsObjectiveLayoutWidget() => _buildImageBasedTutorialLayout(title: "Basics & Objectives", assetPath: 'assets/images/basics-objectives.png');
+  Widget _buildBasicsObjectiveLayoutWidget() => _buildImageBasedTutorialLayout(title: "Basics & Objectives", assetPath: 'assets/images/basics-objectives-tutorial.svg');
   Widget _buildHowToPlayLayoutWidget() => _buildImageBasedTutorialLayout(title: "How to Play", assetPath: 'assets/images/tutorial-how-to-play.svg');
 
   Widget _buildButtonHighlightTutorialOverlayWidget() {

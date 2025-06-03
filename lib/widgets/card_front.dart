@@ -3,8 +3,8 @@ import 'dart:async';
 import 'dart:math'; // For min()
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../data/globals.dart'; // Adjust path as needed
-import 'tutorial_cutout_clipper.dart'; // IMPORT THE SHARED CLIPPER
+import '../data/globals.dart';
+import 'tutorial_cutout_clipper.dart';
 
 // Helper class for clamping animation values (remains the same)
 class ClampedAnimationDecorator extends Animation<double> {
@@ -29,14 +29,14 @@ class CardFront extends StatefulWidget {
   final String term;
   final Function(CardFrontTutorialStep step) onTutorialStepChange;
   final CardFrontTutorialStep initialTutorialStep;
-  final Widget? previousButton; // MODIFIED: To receive the button widget from FlipCardWidget
+  // final Widget? previousButton; // REMOVED: No longer needed on CardFront
 
   const CardFront({
     super.key,
     required this.term,
     required this.onTutorialStepChange,
     required this.initialTutorialStep,
-    this.previousButton, // MODIFIED
+    // this.previousButton, // REMOVED
   });
 
   @override
@@ -542,17 +542,6 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
     final double generationLogoSize = screenWidth * 0.085;
     bool isTutorialActive = _currentTutorialStep != CardFrontTutorialStep.none;
 
-    // Padding for the button container, consistent with CardBack
-    final double bottomButtonContainerPadding = screenHeight * 0.10;
-    // If CardBack's button had an additional upward offset, match it here.
-    // Assuming card_back.dart uses:
-    // final double buttonUpwardOffset = screenHeight * 0.02;
-    // Then the total padding would be:
-    // final double totalBottomPadding = bottomButtonContainerPadding + buttonUpwardOffset;
-    // For now, just using the direct bottomButtonContainerPadding from your CardFront.
-    final double totalBottomPadding = bottomButtonContainerPadding;
-
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -609,16 +598,15 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
               ),
             ),
           ),
-
-          // Display the passed "Previous" Button if available
-          if (widget.previousButton != null)
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: totalBottomPadding), // Use the calculated padding
-                child: widget.previousButton!,
-              ),
-            ),
+          // REMOVED: Previous button logic from CardFront, now handled on CardBack
+          // if (widget.previousButton != null)
+          //   Align(
+          //     alignment: Alignment.bottomCenter,
+          //     child: Padding(
+          //       padding: EdgeInsets.only(bottom: totalBottomPadding),
+          //       child: widget.previousButton!,
+          //     ),
+          //   ),
 
           if (_showGenerationsOverlay) _buildGenerationsOverlay(context),
           if (isTutorialActive) _buildCardFrontTutorialOverlayWidget(),

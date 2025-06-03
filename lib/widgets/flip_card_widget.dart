@@ -4,9 +4,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:test2/widgets/tutorial_cutout_clipper.dart'; // Ensure this path is correct
+import 'package:test2/widgets/tutorial_cutout_clipper.dart';
 
-import '../data/globals.dart'; // Adjust path
+import '../data/globals.dart';
 import 'card_back.dart';
 import 'card_front.dart';
 
@@ -60,7 +60,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
   Animation<double>? _tutorialTextOpacity;
 
   final GlobalKey _nextButtonKeyOnBackCard = GlobalKey(); // For tutorial targeting
-  // final GlobalKey _previousButtonKeyOnFrontCard = GlobalKey(); // Could add if tutorial needs to target it
+  final GlobalKey _previousButtonKeyOnBackCard = GlobalKey(); // NEW: Key for previous button on back card
   final GlobalKey _flipCardStackKey = GlobalKey();
 
 
@@ -501,7 +501,13 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
     final double buttonWidth = screenWidth * 0.3;
     final double buttonHeight = screenHeight * 0.06;
     final double iconSize = min(screenWidth, screenHeight) * 0.04;
-    final double iconBottomPadding = buttonHeight * 0.1; // Padding for icon inside button
+    final double iconBottomPadding = buttonHeight * 0.1;
+
+    // NEW: Smaller dimensions for the "Previous" button
+    final double smallButtonWidth = buttonWidth * 0.8; // 80% of normal width
+    final double smallButtonHeight = buttonHeight * 0.8; // 80% of normal height
+    final double smallIconSize = iconSize * 0.8; // 80% of normal icon size
+    final double smallIconBottomPadding = smallButtonHeight * 0.1;
 
     // --- "Next" button for CardBack ---
     final nextButtonWidget = SizedBox(
@@ -536,14 +542,14 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
       ),
     );
 
-    // --- "Previous Term" button for CardFront ---
-    Widget? frontCardPreviousButton;
+    // --- "Previous Term" button for CardBack (NEW) ---
+    Widget? backCardPreviousButton;
     // Only build the button if the callback from LevelScreen is provided
     if (widget.onPreviousButtonPressed != null) {
-      frontCardPreviousButton = SizedBox(
-        // key: _previousButtonKeyOnFrontCard, // Add key if tutorial needs to target it
-        width: buttonWidth,
-        height: buttonHeight,
+      backCardPreviousButton = SizedBox(
+        key: _previousButtonKeyOnBackCard, // Key for the previous button
+        width: smallButtonWidth, // Use smaller width
+        height: smallButtonHeight, // Use smaller height
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.black,
@@ -555,69 +561,71 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
           ),
           onPressed: () {
             if (_isFlipping) return;
-            // If CardFront's tapToFlip tutorial is active, its overlay catches the tap.
-            // Otherwise, this button press will work.
-            if (_currentCardTutorialStep != CardTutorialOverallStep.frontTapToFlip || !_isFront) {
+            // The previous button does not participate in the current tutorial flow for the back card.
+            // It should always work if available and not flipping.
+            if (!_isFlipping) {
               widget.onPreviousButtonPressed!();
             }
           },
           child: Padding(
-            padding: EdgeInsets.only(bottom: iconBottomPadding),
-            child: Icon(Icons.arrow_back, size: iconSize, color: Colors.white),
+            padding: EdgeInsets.only(bottom: smallIconBottomPadding), // Use smaller padding
+            child: Icon(Icons.arrow_back, size: smallIconSize, color: Colors.white), // Use smaller icon
           ),
         ),
       );
     }
     // --- End "Previous Term" button ---
 
+
     CardFrontTutorialStep initialFrontStepForCardFront = CardFrontTutorialStep.none;
-    if (_isFront) { // Only set CardFront's tutorial step if it's actually the front card showing
+    if (_isFront) {
       switch(_currentCardTutorialStep) {
         case CardTutorialOverallStep.frontTerm: initialFrontStepForCardFront = CardFrontTutorialStep.term; break;
         case CardTutorialOverallStep.frontGeneration: initialFrontStepForCardFront = CardFrontTutorialStep.generationIcon; break;
         case CardTutorialOverallStep.frontTapToFlip: initialFrontStepForCardFront = CardFrontTutorialStep.tapToFlip; break;
-        default: break; // Stays CardFrontTutorialStep.none
+        default: break;
       }
     }
 
     return GestureDetector(
-      onTap: _handleFlip, // Tap anywhere on the card (except buttons) to flip
+      onTap: _handleFlip,
       child: Stack(
         key: _flipCardStackKey,
         alignment: Alignment.center,
         children: [
-          Material( // Ensures text styles and themes are applied correctly to CardFront/CardBack
-            color: Colors.transparent, // Allow Stack background (if any) or Scaffold bg to show
+          Material(
+            color: Colors.transparent,
             child: FlipCard(
               animationDuration: _flipDuration,
               rotateSide: RotateSide.right,
               disableSplashEffect: true,
-              onTapFlipping: false, // We handle tap via parent GestureDetector
+              onTapFlipping: false,
               axis: FlipAxis.vertical,
               controller: _flipCardController,
-              frontWidget: SizedBox( // Ensure CardFront takes full screen
+              frontWidget: SizedBox(
                 width: screenWidth, height: screenHeight,
                 child: CardFront(
                   term: widget.term,
                   initialTutorialStep: initialFrontStepForCardFront,
                   onTutorialStepChange: _handleCardFrontTutorialStepChange,
-                  previousButton: frontCardPreviousButton, // Pass the constructed button
+                  // previousButton: frontCardPreviousButton, // REMOVED: No longer passing to CardFront
                 ),
               ),
-              backWidget: SizedBox( // Ensure CardBack takes full screen
+              backWidget: SizedBox(
                 width: screenWidth, height: screenHeight,
                 child: CardBack(
                   image: widget.image,
                   term: widget.term,
                   definition: widget.definition,
                   generation: widget.generation,
-                  button: nextButtonWidget, // Pass the "Next" button
-                  nextButtonKey: _nextButtonKeyOnBackCard, // Pass its key for tutorial
+                  nextButton: nextButtonWidget, // Changed `button` to `nextButton` for clarity
+                  previousButton: backCardPreviousButton, // NEW: Pass the previous button
+                  nextButtonKey: _nextButtonKeyOnBackCard,
+                  previousButtonKey: _previousButtonKeyOnBackCard, // NEW: Pass its key
                 ),
               ),
             ),
           ),
-          // Overlay for "Next Button on Back Card" tutorial
           _buildCardBackTutorialOverlayWidget(),
         ],
       ),

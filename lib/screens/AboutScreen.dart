@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart'; // Import package_info_plus
 import 'package:audioplayers/audioplayers.dart'; // For sound
+import 'package:flutter_svg/flutter_svg.dart'; // Import flutter_svg
 import 'dart:math'; // For max function
 import '../data/globals.dart'; // Adjust path as per your project structure, for getSoundEnabled
 
@@ -12,24 +12,8 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  String _version = '1.0.0'; // Default version
-  String _appName = 'SLANG THAT THANG!!'; // App name as per original code
-
-  @override
-  void initState() {
-    super.initState();
-    _initPackageInfo();
-  }
-
-  Future<void> _initPackageInfo() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    if (mounted) { // Check if the widget is still in the tree
-      setState(() {
-        _version = packageInfo.version;
-        // _appName = packageInfo.appName; // Original code had this commented out
-      });
-    }
-  }
+  // Removed _version and _appName as they are now assumed to be part of the SVG
+  // Removed _initPackageInfo as package_info_plus is no longer needed for display
 
   Future<void> _playUiClickSound() async {
     bool soundEnabled = true;
@@ -45,120 +29,51 @@ class _AboutScreenState extends State<AboutScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    // Dynamic values for back button (consistent with GenerationalCardScreen logic, but positions may differ from MenuScreen)
+    // Dynamic values for back button (consistent with original AboutScreen logic)
     final double backButtonTopPadding = screenHeight * 0.05;
     final double backButtonLeftPadding = screenWidth * 0.05;
     final double backIconSize = screenWidth * 0.075;
     final double backButtonTouchPadding = screenWidth * 0.03;
 
-    // Content padding for the main scrollable area
-    final double contentHorizontalPadding = screenWidth * 0.06;
-
-    // Title properties - matching MenuScreen
-    final double titleFontSize = max(22.0, screenWidth * 0.085); // Matched MenuScreen
-    final double titleTopPosition = MediaQuery.of(context).padding.top + screenHeight * 0.02; // Matched MenuScreen
-
-    // Font sizes for other text elements
-    final double appNameFontSize = screenWidth * 0.06;
-    final double versionFontSize = screenWidth * 0.04;
-    final double descriptionFontSize = screenWidth * 0.045;
-    final double copyrightFontSize = screenWidth * 0.035;
-
-    // Spacing for the content within the Column
-    // This SizedBox pushes the content of the Column down to clear the absolutely positioned title.
-    // It includes space for the title, its top offset, and padding below it.
-    final double contentStartPaddingInColumn = titleTopPosition + titleFontSize + (screenHeight * 0.05); // Adjusted to match MenuScreen's content logic
-
-    // Spacings for items within the column, after the initial padding
-    final double spacingAfterAppName = screenHeight * 0.015; // Original spacing3
-    final double spacingAfterVersion = screenHeight * 0.03;  // Original spacing4
-    final double spacingAfterDescription = screenHeight * 0.04; // Original spacing5
-    final double bottomContentPadding = screenHeight * 0.02; // Extra padding at the bottom
+    // Title properties - matching MenuScreen and original AboutScreen logic
+    final double titleFontSize = max(22.0, screenWidth * 0.085);
+    final double titleTopPosition = MediaQuery.of(context).padding.top + screenHeight * 0.02;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Main content area
-          Center( // Center the Padded SingleChildScrollView
-            child: Padding(
-              // Symmetrical horizontal padding for the content block
-              padding: EdgeInsets.symmetric(horizontal: contentHorizontalPadding),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // This SizedBox pushes content down to account for the absolutely positioned title
-                    SizedBox(height: contentStartPaddingInColumn),
-                    // SizedBox(height: screenHeight * 0.06), // This was spacing2, now incorporated into contentStartPaddingInColumn logic
-                    Text(
-                      _appName,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: appNameFontSize,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    SizedBox(height: spacingAfterAppName),
-                    Text(
-                      'Version: $_version',
-                      style: TextStyle(
-                        fontSize: versionFontSize,
-                        color: Colors.black,
-                      ),
-                    ),
-                    SizedBox(height: spacingAfterVersion),
-                    Text(
-                      'SLANG THAT THANG!! is an educational and entertaining game designed to bridge the gap between generations by exploring the evolution of slang. Test your knowledge of slang terms from different eras and see how well you understand the language of each generation.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: descriptionFontSize,
-                        color: Colors.black,
-                      ),
-                    ),
-                    SizedBox(height: spacingAfterDescription),
-                    Text(
-                      '© 2024 Callidora Global Media. All rights reserved.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: copyrightFontSize,
-                        color: Colors.black,
-                      ),
-                    ),
-                    SizedBox(height: bottomContentPadding),
-                  ],
-                ),
-              ),
+          // Main Content Image: about.svg, filling the screen similar to GenerationalCardScreen
+          Center(
+            child: SvgPicture.asset(
+              'assets/images/about.svg', // Your about.svg image
+              fit: BoxFit.contain, // Scales the image to fit the screen, preserving aspect ratio
             ),
           ),
           // Positioned "About" Title - replicating MenuScreen's title
-          Positioned(
-            top: titleTopPosition,
-            left: 0,
-            right: 0,
-            child: SafeArea( // Using SafeArea as in MenuScreen title
-              // top: false, bottom: false, // Potentially if titleTopPosition already fully accounts for safe area
-              child: Center(
-                child: Text(
-                  "About",
-                  style: TextStyle(
-                    fontSize: titleFontSize,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Dynamic Back Button (positioning logic kept from original AboutScreen, may differ from MenuScreen's back button)
+          // Positioned(
+          //   top: titleTopPosition,
+          //   left: 0,
+          //   right: 0,
+          //   child: SafeArea(
+          //     child: Center(
+          //       child: Text(
+          //         "About",
+          //         style: TextStyle(
+          //           fontSize: titleFontSize,
+          //           fontWeight: FontWeight.bold,
+          //           color: Colors.black, // Ensure text is visible on your SVG background
+          //         ),
+          //       ),
+          //     ),
+          //   ),
+          // ),
+          // Dynamic Back Button (positioning logic kept from original AboutScreen)
           Positioned(
             top: backButtonTopPadding,
             left: backButtonLeftPadding,
@@ -166,7 +81,7 @@ class _AboutScreenState extends State<AboutScreen> {
               child: Material(
                 color: Colors.transparent,
                 child: IconButton(
-                  icon: Icon(Icons.arrow_back, color: Colors.black, size: backIconSize),
+                  icon: Icon(Icons.arrow_back, color: Colors.black, size: backIconSize), // Ensure icon is visible
                   padding: EdgeInsets.all(backButtonTouchPadding),
                   splashRadius: backIconSize,
                   tooltip: 'Back',
@@ -177,6 +92,19 @@ class _AboutScreenState extends State<AboutScreen> {
                     }
                   },
                 ),
+              ),
+            ),
+          ),
+          // Slang Icon (positioned at bottom-left, consistent with other screens)
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0), // 20px from left and bottom
+              child: SvgPicture.asset(
+                'assets/images/slang-icons.svg',
+                height: screenHeight * 0.08, // 8% of screen height
+                width: screenHeight * 0.08,  // 8% of screen height to keep it square
+                colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn), // Ensure it's black
               ),
             ),
           ),

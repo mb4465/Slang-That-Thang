@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:test2/data/globals.dart';
+import 'package:test2/data/globals.dart'; // Ensure this path is correct for globals.dart
+
+import 'home_screen.dart'; // Import HomeScreen
 
 class Howtoplay extends StatefulWidget {
   const Howtoplay({super.key});
@@ -66,12 +68,42 @@ class _HowToPlayState extends State<Howtoplay> {
     });
   }
 
+  Future<void> _startHomeTutorial() async {
+    // Reset all home screen tutorial preferences to false
+    await setHasSeenWelcomeTutorial(false);
+    await setHasSeenBasicsTutorial(false);
+    await setHasSeenHowToPlayTutorial(false);
+    await setHasSeenStartGameButtonTutorial(false);
+    await setHasSeenMenuButtonTutorial(false);
+
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+            (Route<dynamic> route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final iconSize = screenHeight * 0.05; // ~40 on 800px height
     final padding = screenWidth * 0.05;   // ~20 on 400px width
+
+    // Define the style for the new tutorial button, mimicking HomeScreen's "Next" button
+    final ButtonStyle tutorialButtonStyle = ElevatedButton.styleFrom(
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenHeight * 0.015), // Adjusted padding for smaller button
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: Colors.black, width: 1.5),
+      ),
+      textStyle: TextStyle(fontSize: screenHeight * 0.02, fontWeight: FontWeight.bold), // Adjusted font size
+      minimumSize: Size(screenWidth * 0.25, screenHeight * 0.05), // Ensure a minimum size
+    );
 
     return Scaffold(
       body: Stack(
@@ -81,14 +113,13 @@ class _HowToPlayState extends State<Howtoplay> {
             decoration: const BoxDecoration(color: Colors.white),
             child: Center(
               child: SvgPicture.asset(
-                // child: Image.asset(
                 _imagePaths[_currentImageIndex],
                 fit: BoxFit.contain,
               ),
             ),
           ),
 
-          // Navigation Buttons
+          // Navigation Buttons (Previous/Next Image)
           Positioned.fill(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -111,17 +142,36 @@ class _HowToPlayState extends State<Howtoplay> {
             ),
           ),
 
-          // Back Button (top-left)
+          // Back Button (top-left) - RESTORED TO ORIGINAL POSITIONING
           Positioned(
             top: MediaQuery.of(context).padding.top + screenHeight * 0.02, // ~20
             left: padding,
             child: IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.black, size: iconSize),
               onPressed: () => Navigator.pop(context),
+              tooltip: 'Go back',
             ),
           ),
 
-          // Slang Icon (positioned at bottom-left, as analyzed)
+          // NEW: Tutorial Button (top-right corner)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + screenHeight * 0.02,
+            right: padding, // Anchored to the right
+            child: ElevatedButton(
+              style: tutorialButtonStyle,
+              onPressed: _startHomeTutorial,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Tutorial"),
+                  SizedBox(width: 8),
+                  Icon(Icons.school, size: screenHeight * 0.025), // Using a 'school' icon for tutorial
+                ],
+              ),
+            ),
+          ),
+
+          // Slang Icon (positioned at bottom-left)
           Align(
             alignment: Alignment.bottomLeft,
             child: Padding(
