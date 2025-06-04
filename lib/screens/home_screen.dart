@@ -1,16 +1,15 @@
-// lib/home_screen.dart (or your actual path)
+// lib/home_screen.dart
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:audioplayers/audioplayers.dart';
-import '../widgets/tutorial_cutout_clipper.dart'; // Corrected import
+import '../widgets/tutorial_cutout_clipper.dart';
 import 'game_button.dart';
 import 'menu_screen.dart';
 import 'level_screen.dart';
 import '../data/globals.dart';
 
-// Enum to manage tutorial steps for HomeScreen
 enum HomeScreenTutorialStep {
   none,
   welcome,
@@ -44,8 +43,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isLoadingTutorialStatus = true;
   HomeScreenTutorialStep _currentHomeScreenTutorialStep = HomeScreenTutorialStep.none;
   bool _prefsForTutorialLoaded = false;
-  bool _showCurrentImageTutorial = false; // Simplified: directly controls current image tutorial visibility
-  Timer? _welcomeTutorialDelayTimer; // Timer specifically for the welcome screen
+  bool _showCurrentImageTutorial = false;
+  Timer? _welcomeTutorialDelayTimer;
+
+  // New state variable for image expansion
+  bool _isTutorialImageExpanded = false;
 
   AnimationController? _tutorialHintAnimationController;
   Animation<double>? _tutorialCircleScale;
@@ -118,21 +120,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     setState(() {
       _currentHomeScreenTutorialStep = initialStep;
-      _isLoadingTutorialStatus = false; // Loading is done
+      _isLoadingTutorialStatus = false;
+      _isTutorialImageExpanded = false; // Reset expansion state
 
       if (_currentHomeScreenTutorialStep == HomeScreenTutorialStep.welcome) {
-        _showCurrentImageTutorial = false; // Welcome starts hidden
+        _showCurrentImageTutorial = false;
         _welcomeTutorialDelayTimer?.cancel();
-        _welcomeTutorialDelayTimer = Timer(const Duration(seconds: 3), () { // 3-second delay for Welcome
+        _welcomeTutorialDelayTimer = Timer(const Duration(seconds: 3), () {
           if (mounted && _currentHomeScreenTutorialStep == HomeScreenTutorialStep.welcome) {
             setState(() { _showCurrentImageTutorial = true; });
           }
         });
       } else if (_currentHomeScreenTutorialStep == HomeScreenTutorialStep.basics ||
           _currentHomeScreenTutorialStep == HomeScreenTutorialStep.howToPlay) {
-        _showCurrentImageTutorial = true; // Other image tutorials show immediately
+        _showCurrentImageTutorial = true;
       } else {
-        _showCurrentImageTutorial = false; // No image tutorial for button steps or none
+        _showCurrentImageTutorial = false;
       }
 
       if (_currentHomeScreenTutorialStep == HomeScreenTutorialStep.startGameButton ||
@@ -146,6 +149,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _advanceHomeScreenTutorial() async {
     if (!mounted) return;
+
+    // Reset expansion state when advancing
+    if (_isTutorialImageExpanded) {
+      setState(() => _isTutorialImageExpanded = false);
+    }
+
     HomeScreenTutorialStep nextStep = HomeScreenTutorialStep.none;
 
     switch (_currentHomeScreenTutorialStep) {
@@ -183,13 +192,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     setState(() {
       _currentHomeScreenTutorialStep = nextStep;
-      _welcomeTutorialDelayTimer?.cancel(); // Cancel any pending welcome delay
+      _welcomeTutorialDelayTimer?.cancel();
+      _isTutorialImageExpanded = false; // Ensure expansion is reset
 
       if (_currentHomeScreenTutorialStep == HomeScreenTutorialStep.basics ||
           _currentHomeScreenTutorialStep == HomeScreenTutorialStep.howToPlay) {
-        _showCurrentImageTutorial = true; // Show these immediately
+        _showCurrentImageTutorial = true;
       } else {
-        _showCurrentImageTutorial = false; // Hide for button steps or none
+        _showCurrentImageTutorial = false;
       }
 
       if (_currentHomeScreenTutorialStep == HomeScreenTutorialStep.startGameButton ||
@@ -222,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _screenEntryAnimationController.dispose();
     _buttonSlideOutController.dispose();
     _tutorialHintAnimationController?.dispose();
-    _welcomeTutorialDelayTimer?.cancel(); // Changed from _imageTutorialDelayTimer
+    _welcomeTutorialDelayTimer?.cancel();
     super.dispose();
   }
 
@@ -298,36 +308,121 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       Widget rawImage = assetPath.toLowerCase().endsWith('.svg')
           ? SvgPicture.asset(assetPath, fit: BoxFit.contain, placeholderBuilder: (_) => Center(child: CircularProgressIndicator(color: Colors.blue)))
           : Image.asset(assetPath, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Center(child: Icon(Icons.error_outline, color: Colors.red, size: 40)));
-      imageWidget = ConstrainedBox(constraints: BoxConstraints(maxWidth: imageMaxWidth, maxHeight: imageMaxHeight), child: rawImage);
+
+      imageWidget = ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: imageMaxWidth, maxHeight: imageMaxHeight),
+        child: GestureDetector(
+          onTap: () => setState(() => _isTutorialImageExpanded = true),
+          child: rawImage,
+        ),
+      );
     }
 
     return Positioned.fill(
-        child: GestureDetector(onTap: _advanceHomeScreenTutorial,
-            child: Container(color: Colors.black.withOpacity(0.85),
-                child: Center(
-                    child: Material(elevation: 10.0, borderRadius: BorderRadius.circular(20.0), color: Colors.white,
-                        child: Container(
-                            width: overlayWidth, constraints: BoxConstraints(maxHeight: overlayMaxHeight, minWidth: 300),
-                            padding: const EdgeInsets.all(20.0),
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20.0)),
-                            child: Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black)),
-                                  const SizedBox(height: 20),
-                                  Flexible(child: SingleChildScrollView(child: imageWidget ?? customContent ?? SizedBox.shrink())),
-                                  const SizedBox(height: 25),
-                                  ElevatedButton(onPressed: _advanceHomeScreenTutorial,
-                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black, padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: Colors.black, width: 1.5)),
-                                          textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                      child: Row(mainAxisSize: MainAxisSize.min, children: [Text("Next"), SizedBox(width: 8), Icon(Icons.arrow_forward_ios_rounded, size: 18)]))])))))));
+      child: Container(
+        color: Colors.black.withOpacity(0.85),
+        child: Center(
+          child: Material(
+            elevation: 10.0,
+            borderRadius: BorderRadius.circular(20.0),
+            color: Colors.white,
+            child: Container(
+              width: overlayWidth,
+              constraints: BoxConstraints(maxHeight: overlayMaxHeight, minWidth: 300),
+              padding: const EdgeInsets.all(20.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              child: _isTutorialImageExpanded
+                  ? Stack(
+                children: [
+                  Positioned.fill(
+                    child: customContent ?? imageWidget ?? const SizedBox(),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, size: 30),
+                      onPressed: () => setState(() => _isTutorialImageExpanded = false),
+                    ),
+                  ),
+                ],
+              )
+                  : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black),
+                  ),
+                  const SizedBox(height: 20),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: customContent ?? imageWidget ?? const SizedBox.shrink(),
+                    ),
+                  ),
+                  const SizedBox(height: 25),
+                  ElevatedButton(
+                    onPressed: _advanceHomeScreenTutorial,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(color: Colors.black, width: 1.5),
+                      ),
+                      textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text("Next"),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
-  Widget _buildWelcomeLayoutWidget() => _buildImageBasedTutorialLayout(title: "Welcome to", customContent: Column(mainAxisSize: MainAxisSize.min, children: [
-    Text("SLANG THAT THANG!!", textAlign: TextAlign.center, style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.black, letterSpacing: 1.2)),
-    SizedBox(height: 20), Text("Get ready to test your slang knowledge!", textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Colors.black87))]));
-  Widget _buildBasicsObjectiveLayoutWidget() => _buildImageBasedTutorialLayout(title: "Basics & Objectives", assetPath: 'assets/images/basics-objectives-tutorial.svg');
-  Widget _buildHowToPlayLayoutWidget() => _buildImageBasedTutorialLayout(title: "How to Play", assetPath: 'assets/images/tutorial-how-to-play.svg');
+  Widget _buildWelcomeLayoutWidget() => _buildImageBasedTutorialLayout(
+    title: "Welcome to",
+    customContent: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+            "SLANG THAT THANG!!",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.black, letterSpacing: 1.2)),
+        const SizedBox(height: 20),
+        Text(
+            "Get ready to test your slang knowledge!",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 18, color: Colors.black87)),
+      ],
+    ),
+  );
+
+  Widget _buildBasicsObjectiveLayoutWidget() => _buildImageBasedTutorialLayout(
+    title: "Basics & Objectives",
+    assetPath: 'assets/images/basics-objectives-tutorial.svg',
+  );
+
+  Widget _buildHowToPlayLayoutWidget() => _buildImageBasedTutorialLayout(
+    title: "How to Play",
+    assetPath: 'assets/images/tutorial-how-to-play.svg',
+  );
 
   Widget _buildButtonHighlightTutorialOverlayWidget() {
     if (_tutorialHintAnimationController == null || _currentHomeScreenTutorialStep == HomeScreenTutorialStep.none ||
@@ -405,7 +500,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
 
     Widget? currentImageTutorialWidgetToShow;
-    // MODIFIED: Only show image tutorial if its specific step is active AND _showCurrentImageTutorial is true
     if ((_currentHomeScreenTutorialStep == HomeScreenTutorialStep.welcome ||
         _currentHomeScreenTutorialStep == HomeScreenTutorialStep.basics ||
         _currentHomeScreenTutorialStep == HomeScreenTutorialStep.howToPlay) &&
@@ -417,7 +511,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         default: break;
       }
     }
-
 
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
