@@ -256,7 +256,7 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
-                  child: SvgPicture.asset('assets/images/generations-icon.svg', fit: BoxFit.contain),
+                  child: SvgPicture.asset('assets/images/generations-without-icon.svg', fit: BoxFit.contain),
                 ),
               ),
             ],

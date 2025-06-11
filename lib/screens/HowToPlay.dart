@@ -3,7 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:test2/data/globals.dart'; // Ensure this path is correct for globals.dart
 
-import 'home_screen.dart'; // Import HomeScreen
+// HomeScreen import is no longer needed here as the tutorial button is moved
+// import 'home_screen.dart'; // This line is removed
 
 class Howtoplay extends StatefulWidget {
   const Howtoplay({super.key});
@@ -15,7 +16,7 @@ class Howtoplay extends StatefulWidget {
 class _HowToPlayState extends State<Howtoplay> {
   int _currentImageIndex = 0;
   final List<String> _imagePaths = [
-    'assets/images/basics-objectives-without-logo.svg',
+    'assets/images/basics-objectives-tutorial-without-logo.svg',
     'assets/images/how-to-play-without-logo.svg',
   ];
 
@@ -68,22 +69,8 @@ class _HowToPlayState extends State<Howtoplay> {
     });
   }
 
-  Future<void> _startHomeTutorial() async {
-    // Reset all home screen tutorial preferences to false
-    await setHasSeenWelcomeTutorial(false);
-    await setHasSeenBasicsTutorial(false);
-    await setHasSeenHowToPlayTutorial(false);
-    await setHasSeenStartGameButtonTutorial(false);
-    await setHasSeenMenuButtonTutorial(false);
-
-    if (mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-            (Route<dynamic> route) => false,
-      );
-    }
-  }
+  // --- The _startHomeTutorial method is REMOVED from here ---
+  // --- The tutorialButtonStyle definition is REMOVED from here ---
 
   @override
   Widget build(BuildContext context) {
@@ -91,19 +78,6 @@ class _HowToPlayState extends State<Howtoplay> {
     final screenWidth = MediaQuery.of(context).size.width;
     final iconSize = screenHeight * 0.05; // ~40 on 800px height
     final padding = screenWidth * 0.05;   // ~20 on 400px width
-
-    // Define the style for the new tutorial button, mimicking HomeScreen's "Next" button
-    final ButtonStyle tutorialButtonStyle = ElevatedButton.styleFrom(
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenHeight * 0.015), // Adjusted padding for smaller button
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: Colors.black, width: 1.5),
-      ),
-      textStyle: TextStyle(fontSize: screenHeight * 0.02, fontWeight: FontWeight.bold), // Adjusted font size
-      minimumSize: Size(screenWidth * 0.25, screenHeight * 0.05), // Ensure a minimum size
-    );
 
     return Scaffold(
       body: Stack(
@@ -142,7 +116,7 @@ class _HowToPlayState extends State<Howtoplay> {
             ),
           ),
 
-          // Back Button (top-left) - RESTORED TO ORIGINAL POSITIONING
+          // Back Button (top-left)
           Positioned(
             top: MediaQuery.of(context).padding.top + screenHeight * 0.02, // ~20
             left: padding,
@@ -153,23 +127,7 @@ class _HowToPlayState extends State<Howtoplay> {
             ),
           ),
 
-          // NEW: Tutorial Button (top-right corner)
-          Positioned(
-            top: MediaQuery.of(context).padding.top + screenHeight * 0.02,
-            right: padding, // Anchored to the right
-            child: ElevatedButton(
-              style: tutorialButtonStyle,
-              onPressed: _startHomeTutorial,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text("Tutorial"),
-                  SizedBox(width: 8),
-                  Icon(Icons.school, size: screenHeight * 0.025), // Using a 'school' icon for tutorial
-                ],
-              ),
-            ),
-          ),
+          // --- The Tutorial Button (top-right corner) is REMOVED from here ---
 
           // Slang Icon (positioned at bottom-left)
           Align(

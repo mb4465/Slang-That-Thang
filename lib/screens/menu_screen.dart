@@ -8,11 +8,12 @@ import 'package:audioplayers/audioplayers.dart';
 
 // Adjust these import paths based on your actual project structure
 import '../data/globals.dart';
-import 'HowToPlay.dart';
+import 'HowToPlay.dart'; // Keep this, as "How to Play" button navigates to it
 import 'AboutScreen.dart';
 import 'generational_card_screen.dart';
 import 'settings_screen.dart';
 import 'game_button.dart';
+import 'home_screen.dart'; // Added import for HomeScreen
 
 const _kRemoveAdsProductId = 'remove_ads_premium';
 const String _kGooglePlayReviewCouponCode = "REVIEWACCESS2025";
@@ -248,6 +249,37 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       }
     });
   }
+
+  // --- START: Copied from Howtoplay.dart ---
+  Future<void> _startHomeTutorial() async {
+    // Reset all home screen tutorial preferences to false
+    await setHasSeenWelcomeTutorial(false);
+    await setHasSeenBasicsTutorial(false);
+    await setHasSeenHowToPlayTutorial(false);
+    await setHasSeenStartGameButtonTutorial(false);
+    await setHasSeenMenuButtonTutorial(false);
+
+    // Reset Menu screen tutorial preferences to false
+    await setHasSeenMenuScreenTutorial(false);
+
+    // Reset Card tutorial preferences to false
+    await setHasSeenCardFrontTermTutorial(false);
+    await setHasSeenCardFrontGenerationTutorial(false);
+    await setHasSeenCardFrontTapToFlipTutorial(false);
+    await setHasSeenCardBackNextButtonTutorial(false);
+
+    // Navigate to HomeScreen and remove all previous routes from the stack.
+    // This makes HomeScreen the new root and ensures the tutorial starts fresh.
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+            (Route<dynamic> route) => false,
+      );
+    }
+  }
+  // --- END: Copied from Howtoplay.dart ---
+
 
   @override
   void dispose() {
@@ -765,12 +797,28 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     }
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    // topPaddingValue is already defined here, matching the calculation in Howtoplay.dart
     final double topPaddingValue = MediaQuery.of(context).padding.top + screenHeight * 0.02;
     final double backIconVisualSize = max(24.0, screenWidth * 0.07);
     final double titleFontSize = max(22.0, screenWidth * 0.085);
     final double buttonVerticalPadding = screenHeight * 0.018;
     final double errorTextSize = max(12.0, screenWidth * 0.035);
     final double bottomScreenPadding = screenHeight * 0.02;
+
+    // Define the style for the new tutorial button, mimicking HomeScreen's "Next" button
+    // This was moved from Howtoplay.dart
+    final ButtonStyle tutorialButtonStyle = ElevatedButton.styleFrom(
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenHeight * 0.015), // Adjusted padding for smaller button
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: Colors.black, width: 1.5),
+      ),
+      textStyle: TextStyle(fontSize: screenHeight * 0.02, fontWeight: FontWeight.bold), // Adjusted font size
+      minimumSize: Size(screenWidth * 0.25, screenHeight * 0.05), // Ensure a minimum size
+    );
+
 
     final removeAdsProduct = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
     String priceLabel = 'N/A';
@@ -792,7 +840,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                 mainAxisAlignment: MainAxisAlignment.start, // Changed to start to align content at the top
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(height: topPaddingValue + titleFontSize + screenHeight * 0.05), // Space for title and padding
+                  // This SizedBox creates space for the title and the newly moved button
+                  SizedBox(height: topPaddingValue + titleFontSize + screenHeight * 0.05),
                   _buildButton(0, 'How to Play', () => _navigateTo(0, const Howtoplay()), key: _howToPlayKey),
                   SizedBox(height: buttonVerticalPadding),
                   _buildButton(1, 'Generations', () => _navigateTo(1, const GenerationalCardScreen()), key: _generationalCardKey),
@@ -833,7 +882,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   'Menu',
                   style: TextStyle(
                     fontSize: titleFontSize,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                     color: Colors.black,
                   ),
                 ),
@@ -868,6 +917,26 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
+
+          // --- START: New Tutorial Button (Moved from Howtoplay.dart) ---
+          Positioned(
+            top: topPaddingValue, // Matches the Howtoplay.dart's top calculation
+            right: screenWidth * 0.05, // Matches the Howtoplay.dart's 'padding' (screenWidth * 0.05)
+            child: ElevatedButton(
+              style: tutorialButtonStyle,
+              onPressed: _startHomeTutorial, // Retains the original functionality
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Tutorial"),
+                  SizedBox(width: 8),
+                  Icon(Icons.school, size: screenHeight * 0.025), // Using a 'school' icon for tutorial
+                ],
+              ),
+            ),
+          ),
+          // --- END: New Tutorial Button ---
+
           if (_currentMenuTutorialStep != MenuTutorialStep.none && _prefsForMenuTutorialLoaded)
             _buildMenuTutorialHintOverlayWidget(),
         ],
