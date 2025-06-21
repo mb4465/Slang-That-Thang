@@ -25,6 +25,7 @@ enum MenuTutorialStep {
   removeAds,
   settings,
   about,
+  tutorialButton, // Represents the "Tutorial" button itself
   backArrow,
 }
 
@@ -96,20 +97,23 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   Animation<Offset>? _menuTutorialPointerOffset;
   Animation<double>? _menuTutorialTextOpacity;
 
+  // Keys for tutorial targeting - ensure they match the button order in build()
+  final GlobalKey _tutorialButtonKey = GlobalKey();
   final GlobalKey _howToPlayKey = GlobalKey();
   final GlobalKey _generationalCardKey = GlobalKey();
-  final GlobalKey _removeAdsKey = GlobalKey();
   final GlobalKey _settingsKey = GlobalKey();
+  final GlobalKey _removeAdsKey = GlobalKey();
   final GlobalKey _aboutKey = GlobalKey();
   final GlobalKey _stackKey = GlobalKey();
   final GlobalKey _backArrowKey = GlobalKey();
 
+  // Tutorial hint texts
   final Map<MenuTutorialStep, String> tutorialTexts = {
+    MenuTutorialStep.tutorialButton: "Tutorial", // Hint for Tutorial button (keeps button text same when highlighted)
     MenuTutorialStep.howToPlay: "You can see the game rules here.",
-    MenuTutorialStep.generationalCard: "Generations Card",
-    MenuTutorialStep.removeAds:
-    "You get 20 rounds free. After that, you'll need to pay \$4.99 for Full Access.",
+    MenuTutorialStep.generationalCard: "View the list of generations and their timeframes.",
     MenuTutorialStep.settings: "You can mute/unmute all the sounds.",
+    MenuTutorialStep.removeAds: "You get 20 rounds free. After that, you'll need to pay \$4.99 for Full Access.",
     MenuTutorialStep.about: "Learn more about SLANG THAT THANG!! and how to play!",
     MenuTutorialStep.backArrow: "Click the back arrow to go back.",
   };
@@ -184,7 +188,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 1800),
       vsync: this,
     );
-    _menuTutorialCircleScale = Tween<double>(begin: 1.0, end: 1.25).animate( // Slightly increased end scale for visibility
+    _menuTutorialCircleScale = Tween<double>(begin: 1.0, end: 1.25).animate(
       CurvedAnimation(parent: _menuTutorialAnimationController!, curve: const Interval(0.0, 0.7, curve: Curves.easeInOut)),
     );
     _menuTutorialCircleOpacity = TweenSequence<double>([
@@ -212,7 +216,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
-            _currentMenuTutorialStep = MenuTutorialStep.howToPlay;
+            // Start tutorial with the "Tutorial" button (new first step)
+            _currentMenuTutorialStep = MenuTutorialStep.tutorialButton;
             _menuTutorialAnimationController?.repeat();
           });
         }
@@ -226,11 +231,13 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   void _advanceMenuTutorial() async {
     if (!mounted) return;
     MenuTutorialStep nextStep = MenuTutorialStep.none;
+    // New tutorial sequence
     switch (_currentMenuTutorialStep) {
+      case MenuTutorialStep.tutorialButton: nextStep = MenuTutorialStep.howToPlay; break;
       case MenuTutorialStep.howToPlay: nextStep = MenuTutorialStep.generationalCard; break;
-      case MenuTutorialStep.generationalCard: nextStep = MenuTutorialStep.removeAds; break;
-      case MenuTutorialStep.removeAds: nextStep = MenuTutorialStep.settings; break;
-      case MenuTutorialStep.settings: nextStep = MenuTutorialStep.about; break;
+      case MenuTutorialStep.generationalCard: nextStep = MenuTutorialStep.settings; break;
+      case MenuTutorialStep.settings: nextStep = MenuTutorialStep.removeAds; break;
+      case MenuTutorialStep.removeAds: nextStep = MenuTutorialStep.about; break;
       case MenuTutorialStep.about: nextStep = MenuTutorialStep.backArrow; break;
       case MenuTutorialStep.backArrow:
         nextStep = MenuTutorialStep.none;
@@ -250,26 +257,18 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     });
   }
 
-  // --- START: Copied from Howtoplay.dart ---
   Future<void> _startHomeTutorial() async {
-    // Reset all home screen tutorial preferences to false
     await setHasSeenWelcomeTutorial(false);
     await setHasSeenBasicsTutorial(false);
     await setHasSeenHowToPlayTutorial(false);
     await setHasSeenStartGameButtonTutorial(false);
     await setHasSeenMenuButtonTutorial(false);
-
-    // Reset Menu screen tutorial preferences to false
     await setHasSeenMenuScreenTutorial(false);
-
-    // Reset Card tutorial preferences to false
     await setHasSeenCardFrontTermTutorial(false);
     await setHasSeenCardFrontGenerationTutorial(false);
     await setHasSeenCardFrontTapToFlipTutorial(false);
     await setHasSeenCardBackNextButtonTutorial(false);
 
-    // Navigate to HomeScreen and remove all previous routes from the stack.
-    // This makes HomeScreen the new root and ensures the tutorial starts fresh.
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
@@ -278,8 +277,6 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       );
     }
   }
-  // --- END: Copied from Howtoplay.dart ---
-
 
   @override
   void dispose() {
@@ -489,6 +486,31 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     });
   }
 
+  void _handleTutorialPress(int index) async { // This is for the "Tutorial" button action
+    if (_buttonPressController.isAnimating || _selectedButtonIndex != null ||
+        (_currentMenuTutorialStep != MenuTutorialStep.none && _currentMenuTutorialStep != MenuTutorialStep.backArrow)) return;
+
+    await _playUiClickSound();
+    if (!mounted) return;
+    setState(() => _selectedButtonIndex = index);
+
+    try {
+      await _buttonPressController.forward().orCancel;
+      if (mounted) {
+        await _startHomeTutorial(); // Action for "Tutorial" button
+      }
+    } catch (e) {
+      // Error handling for animation controller if needed
+    } finally {
+      // Ensure button state is reset even if _startHomeTutorial navigates away
+      // or if the animation is cancelled.
+      if (mounted && _selectedButtonIndex == index) {
+        _buttonPressController.reset();
+        setState(() => _selectedButtonIndex = null);
+      }
+    }
+  }
+
   Widget _buildButton(int index, String text, VoidCallback onTap, {bool disabled = false, GlobalKey? key}) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -497,29 +519,66 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     final double buttonHeight = screenHeight * 0.07;
     final double buttonFontSize = max(14.0, buttonHeight * 0.3);
 
+    String currentButtonText = text;
     bool isTutorialTargetingThisButton = false;
+
     if (_currentMenuTutorialStep != MenuTutorialStep.none) {
-      if (_currentMenuTutorialStep == MenuTutorialStep.howToPlay && key == _howToPlayKey) isTutorialTargetingThisButton = true;
-      if (_currentMenuTutorialStep == MenuTutorialStep.generationalCard && key == _generationalCardKey) isTutorialTargetingThisButton = true;
-      if (_currentMenuTutorialStep == MenuTutorialStep.removeAds && key == _removeAdsKey) isTutorialTargetingThisButton = true;
-      if (_currentMenuTutorialStep == MenuTutorialStep.settings && key == _settingsKey) isTutorialTargetingThisButton = true;
-      if (_currentMenuTutorialStep == MenuTutorialStep.about && key == _aboutKey) isTutorialTargetingThisButton = true;
+      switch (_currentMenuTutorialStep) {
+        case MenuTutorialStep.tutorialButton:
+          if (key == _tutorialButtonKey) {
+            isTutorialTargetingThisButton = true;
+            // Original logic: change button text to its hint text.
+            // Since hint text for tutorialButton is "Tutorial" and button label is "Tutorial", no visible change.
+            currentButtonText = tutorialTexts[MenuTutorialStep.tutorialButton] ?? text;
+          }
+          break;
+        case MenuTutorialStep.howToPlay:
+          if (key == _howToPlayKey) isTutorialTargetingThisButton = true;
+          break;
+        case MenuTutorialStep.generationalCard:
+          if (key == _generationalCardKey) isTutorialTargetingThisButton = true;
+          break;
+        case MenuTutorialStep.settings:
+          if (key == _settingsKey) isTutorialTargetingThisButton = true;
+          break;
+        case MenuTutorialStep.removeAds:
+          if (key == _removeAdsKey) isTutorialTargetingThisButton = true;
+          break;
+        case MenuTutorialStep.about:
+          if (key == _aboutKey) isTutorialTargetingThisButton = true;
+          break;
+        default:
+          break;
+      }
     }
 
     final bool effectivelyDisabled = disabled ||
         (_currentMenuTutorialStep != MenuTutorialStep.none &&
-            !isTutorialTargetingThisButton); // Simplified: if tutorial is on and not this button, disable it.
+            _currentMenuTutorialStep != MenuTutorialStep.backArrow &&
+            !isTutorialTargetingThisButton);
+
+    VoidCallback? finalOnPressed;
+    if (effectivelyDisabled) {
+      finalOnPressed = null;
+    } else if (isTutorialTargetingThisButton && _currentMenuTutorialStep != MenuTutorialStep.backArrow) {
+      finalOnPressed = () async {
+        await _playUiClickSound();
+        _advanceMenuTutorial();
+      };
+    } else {
+      finalOnPressed = onTap;
+    }
 
     return Opacity(
-      opacity: effectivelyDisabled ? 0.5 : 1.0,
+      opacity: finalOnPressed == null ? 0.5 : 1.0,
       child: Transform.translate(
         key: key,
         offset: _selectedButtonIndex == index ? Offset(_buttonPressController.value * screenWidth, 0) : Offset.zero,
         child: GameButton(
-            text: text,
+            text: currentButtonText,
             width: buttonWidth,
             height: buttonHeight,
-            onPressed: effectivelyDisabled ? null : onTap,
+            onPressed: finalOnPressed,
             isBold: true,
             fontSize: buttonFontSize
         ),
@@ -534,10 +593,11 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
     GlobalKey? currentTargetKey;
     switch (_currentMenuTutorialStep) {
+      case MenuTutorialStep.tutorialButton: currentTargetKey = _tutorialButtonKey; break;
       case MenuTutorialStep.howToPlay: currentTargetKey = _howToPlayKey; break;
       case MenuTutorialStep.generationalCard: currentTargetKey = _generationalCardKey; break;
-      case MenuTutorialStep.removeAds: currentTargetKey = _removeAdsKey; break;
       case MenuTutorialStep.settings: currentTargetKey = _settingsKey; break;
+      case MenuTutorialStep.removeAds: currentTargetKey = _removeAdsKey; break;
       case MenuTutorialStep.about: currentTargetKey = _aboutKey; break;
       case MenuTutorialStep.backArrow: currentTargetKey = _backArrowKey; break;
       default: return const SizedBox.shrink();
@@ -575,14 +635,14 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     }
 
     final Offset targetPositionInStack = targetRenderBox.localToGlobal(Offset.zero, ancestor: ancestorRenderBox);
-    final Size targetSize = targetRenderBox.size; // This is the size of the Material widget for backArrowKey
+    final Size targetSize = targetRenderBox.size;
 
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final double scaleFactor = MediaQuery.of(context).size.width / 400;
     final double hintTextFontSize = 16 * scaleFactor;
     final double spotlightBorderWidth = 2.5 * scaleFactor;
-    final double backIconSizeForHint = max(24.0, screenWidth * 0.07); // Recalculate for use here
+    final double backIconSizeForHint = max(24.0, screenWidth * 0.07);
 
     final Offset targetCenter = Offset(
       targetPositionInStack.dx + targetSize.width / 2,
@@ -595,27 +655,29 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     final double hintContainerCornerRadius = max(6.0, 8.0 * scaleFactor);
 
     bool pointUpwards;
-    if (_currentMenuTutorialStep == MenuTutorialStep.settings || _currentMenuTutorialStep == MenuTutorialStep.about) {
-      pointUpwards = true;
-    } else if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) {
-      pointUpwards = false;
+    if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) {
+      pointUpwards = false; // Hint below back arrow
     } else {
+      // Generic rule: if button center is in lower 40% of screen, point upwards.
       pointUpwards = targetCenter.dy > screenHeight * 0.6;
     }
 
     double estimatedTextHeight = (tutorialTexts[_currentMenuTutorialStep] ?? "").length > 40
-        ? hintTextFontSize * 3.5
-        : hintTextFontSize * 2.0;
+        ? hintTextFontSize * 3.5 // Approximate height for 2-3 lines
+        : hintTextFontSize * 2.0; // Approximate height for 1-2 lines
     double estimatedHintBlockHeight = estimatedTextHeight + (hintPaddingVertical * 2);
 
     double verticalOffsetSpacing = 10 * scaleFactor;
-    if (pointUpwards && (_currentMenuTutorialStep == MenuTutorialStep.settings || _currentMenuTutorialStep == MenuTutorialStep.about)) {
+    // Specific offset for buttons that might be low on screen AND are pointing upwards
+    if (pointUpwards &&
+        (_currentMenuTutorialStep == MenuTutorialStep.settings ||
+            _currentMenuTutorialStep == MenuTutorialStep.removeAds || // Added Remove Ads
+            _currentMenuTutorialStep == MenuTutorialStep.about)) {
       verticalOffsetSpacing = (targetSize.height * 0.25) + (20 * scaleFactor);
     } else if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) {
       verticalOffsetSpacing = 15 * scaleFactor;
     }
 
-    // For back arrow, use its actual icon size for positioning hint relative to the icon itself, not the larger Material tappable area.
     double referenceTargetHeight = _currentMenuTutorialStep == MenuTutorialStep.backArrow ? backIconSizeForHint : targetSize.height;
 
     double hintBlockVerticalOffsetFromTargetCenter = pointUpwards
@@ -628,7 +690,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     double? hintBlockRightPosition = 20 * scaleFactor;
 
     if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) {
-      hintBlockLeftPosition = targetCenter.dx - (backIconSizeForHint /2) + (10 * scaleFactor); // Adjusted to be closer to icon
+      hintBlockLeftPosition = targetCenter.dx - (backIconSizeForHint /2) + (10 * scaleFactor);
       hintBlockRightPosition = null;
     }
 
@@ -637,7 +699,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
     return Positioned.fill(
       child: GestureDetector(
-        onTap: _advanceMenuTutorial, // Allow tap on overlay for all steps to advance
+        onTap: () async {
+          await _playUiClickSound(); // Play sound before advancing for overlay tap
+          _advanceMenuTutorial();
+        },
         child: AnimatedBuilder(
           animation: Listenable.merge([_menuTutorialAnimationController!, _menuTutorialPointerOffset!]),
           builder: (context, child) {
@@ -649,13 +714,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             bool isCutoutCircular = false;
 
             if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) {
-              // For back arrow, create a circular highlight around the icon.
-              // The IconButton's typical tap target is 48x48. We highlight a circle around the icon.
-              // `backIconSizeForHint` is the visual size. Let's add padding for the highlight.
-              double highlightDiameter = (backIconSizeForHint + 16.0) * currentAnimatedScale; // 16.0 is padding
+              double highlightDiameter = (backIconSizeForHint + 16.0) * currentAnimatedScale;
               animatedHighlightWidth = highlightDiameter;
               animatedHighlightHeight = highlightDiameter;
-              animatedHighlightBorderRadius = BorderRadius.circular(highlightDiameter / 2); // Makes it a circle
+              animatedHighlightBorderRadius = BorderRadius.circular(highlightDiameter / 2);
               isCutoutCircular = true;
             } else {
               animatedHighlightWidth = targetSize.width * currentAnimatedScale;
@@ -665,7 +727,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             }
 
             final Rect cutoutRect = Rect.fromCenter(
-              center: targetCenter, // Center of the Material widget for back arrow
+              center: targetCenter,
               width: animatedHighlightWidth,
               height: animatedHighlightHeight,
             );
@@ -675,35 +737,47 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             if (currentHintBlockTopPosition < topSafeArea) {
               currentHintBlockTopPosition = topSafeArea;
             } else if (currentHintBlockTopPosition + estimatedHintBlockHeight > bottomSafeArea) {
+              // Try to flip if it overflows bottom and wasn't already pointing up, and there's space above
               if (!pointUpwards && (targetCenter.dy - referenceTargetHeight / 2 - estimatedHintBlockHeight - 10 * scaleFactor) > topSafeArea) {
                 double newVerticalOffsetSpacing = 10 * scaleFactor;
-                if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) newVerticalOffsetSpacing = 15 * scaleFactor;
+                // Recalculate specific offset if applicable for newly flipped elements
+                if (_currentMenuTutorialStep == MenuTutorialStep.settings ||
+                    _currentMenuTutorialStep == MenuTutorialStep.removeAds ||
+                    _currentMenuTutorialStep == MenuTutorialStep.about) {
+                  newVerticalOffsetSpacing = (targetSize.height * 0.25) + (20 * scaleFactor);
+                } else if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) { // Should not happen for backArrow as it's pointUpwards=false
+                  newVerticalOffsetSpacing = 15 * scaleFactor;
+                }
 
                 double newHintBlockVerticalOffset = -(referenceTargetHeight / 2 + estimatedHintBlockHeight * 0.5 + newVerticalOffsetSpacing);
                 currentHintBlockTopPosition = targetCenter.dy + newHintBlockVerticalOffset + _menuTutorialPointerOffset!.value.dy;
 
                 if (currentHintBlockTopPosition < topSafeArea) currentHintBlockTopPosition = topSafeArea;
-              } else {
+              } else { // Stick to bottom safe area if cannot flip or no space
                 currentHintBlockTopPosition = bottomSafeArea - estimatedHintBlockHeight;
               }
             }
+            // Final check for top boundary after potential flip or adjustment
             if (currentHintBlockTopPosition < topSafeArea) currentHintBlockTopPosition = topSafeArea;
+
 
             double currentHintBlockLeft = hintBlockLeftPosition;
             if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) {
+              // Estimate text width to prevent overflow for back arrow hint
               final tempTextPainter = TextPainter(
                 text: TextSpan(text: tutorialTexts[_currentMenuTutorialStep], style: TextStyle(fontSize: hintTextFontSize)),
                 textDirection: TextDirection.ltr,
-                textAlign: TextAlign.left, // For width calculation of left-aligned text
-              )..layout(maxWidth: screenWidth * 0.7 - hintPaddingHorizontal * 2); // Max width for text content
+                textAlign: TextAlign.left,
+              )..layout(maxWidth: screenWidth * 0.7 - hintPaddingHorizontal * 2); // Max width for hint near back arrow
 
               double estimatedTextContentWidth = tempTextPainter.width;
               double estimatedTextContainerWidth = estimatedTextContentWidth + hintPaddingHorizontal * 2;
 
-
+              // Adjust left position if it would overflow right screen edge
               if (currentHintBlockLeft + estimatedTextContainerWidth > screenWidth - (20 * scaleFactor)) {
                 currentHintBlockLeft = screenWidth - (20 * scaleFactor) - estimatedTextContainerWidth;
               }
+              // Ensure it doesn't go off the left screen edge
               if (currentHintBlockLeft < 20 * scaleFactor) {
                 currentHintBlockLeft = 20 * scaleFactor;
               }
@@ -714,8 +788,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                 ClipPath(
                   clipper: _TutorialCutoutClipper(
                     rect: cutoutRect,
-                    borderRadius: animatedHighlightBorderRadius, // Used if not circular
-                    isCircular: isCutoutCircular, // Pass circular flag
+                    borderRadius: animatedHighlightBorderRadius,
+                    isCircular: isCutoutCircular,
                   ),
                   child: Container(
                     color: Colors.black.withOpacity(0.85),
@@ -730,8 +804,6 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                       width: cutoutRect.width,
                       height: cutoutRect.height,
                       decoration: BoxDecoration(
-                        // For circular, borderRadius is effectively handled by shape.
-                        // For rectangle, it's applied.
                         shape: isCutoutCircular ? BoxShape.circle : BoxShape.rectangle,
                         borderRadius: isCutoutCircular ? null : animatedHighlightBorderRadius,
                         border: Border.all(
@@ -747,13 +819,13 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   right: _currentMenuTutorialStep == MenuTutorialStep.backArrow ? null : hintBlockRightPosition,
                   top: currentHintBlockTopPosition,
                   width: _currentMenuTutorialStep == MenuTutorialStep.backArrow
-                      ? (screenWidth * 0.7) // Constrain width for back arrow text
-                      : null,
+                      ? (screenWidth * 0.7) // Constrain width for back arrow hint
+                      : null, // Full width for other hints (centered by left/right constraints)
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: _currentMenuTutorialStep == MenuTutorialStep.backArrow
-                        ? CrossAxisAlignment.start
-                        : CrossAxisAlignment.center,
+                        ? CrossAxisAlignment.start // Align back arrow hint text left
+                        : CrossAxisAlignment.center, // Center other hint texts
                     children: [
                       Opacity(
                         opacity: _menuTutorialTextOpacity!.value,
@@ -797,28 +869,12 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     }
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    // topPaddingValue is already defined here, matching the calculation in Howtoplay.dart
     final double topPaddingValue = MediaQuery.of(context).padding.top + screenHeight * 0.02;
     final double backIconVisualSize = max(24.0, screenWidth * 0.07);
     final double titleFontSize = max(22.0, screenWidth * 0.085);
     final double buttonVerticalPadding = screenHeight * 0.018;
     final double errorTextSize = max(12.0, screenWidth * 0.035);
     final double bottomScreenPadding = screenHeight * 0.02;
-
-    // Define the style for the new tutorial button, mimicking HomeScreen's "Next" button
-    // This was moved from Howtoplay.dart
-    final ButtonStyle tutorialButtonStyle = ElevatedButton.styleFrom(
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenHeight * 0.015), // Adjusted padding for smaller button
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: Colors.black, width: 1.5),
-      ),
-      textStyle: TextStyle(fontSize: screenHeight * 0.02, fontWeight: FontWeight.bold), // Adjusted font size
-      minimumSize: Size(screenWidth * 0.25, screenHeight * 0.05), // Ensure a minimum size
-    );
-
 
     final removeAdsProduct = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
     String priceLabel = 'N/A';
@@ -837,17 +893,31 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             child: SingleChildScrollView(
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.start, // Changed to start to align content at the top
+                mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // This SizedBox creates space for the title and the newly moved button
-                  SizedBox(height: topPaddingValue + titleFontSize + screenHeight * 0.05),
-                  _buildButton(0, 'How to Play', () => _navigateTo(0, const Howtoplay()), key: _howToPlayKey),
+                  SizedBox(height: topPaddingValue + titleFontSize + screenHeight * 0.05), // Space for title and back arrow
+
+                  // New Button Order
+                  // 1. Tutorial
+                  _buildButton(0, 'Tutorial', () => _handleTutorialPress(0), key: _tutorialButtonKey),
                   SizedBox(height: buttonVerticalPadding),
-                  _buildButton(1, 'Generations', () => _navigateTo(1, const GenerationalCardScreen()), key: _generationalCardKey),
+
+                  // 2. How to Play
+                  _buildButton(1, 'How to Play', () => _navigateTo(1, const Howtoplay()), key: _howToPlayKey),
                   SizedBox(height: buttonVerticalPadding),
+
+                  // 3. Generations
+                  _buildButton(2, 'Generations', () => _navigateTo(2, const GenerationalCardScreen()), key: _generationalCardKey),
+                  SizedBox(height: buttonVerticalPadding),
+
+                  // 4. Settings
+                  _buildButton(3, 'Settings', () => _navigateTo(3, const SettingsScreen()), key: _settingsKey),
+                  SizedBox(height: buttonVerticalPadding),
+
+                  // 5. Remove Ads
                   _buildButton(
-                    2,
+                    4, // New index
                     _adsRemoved
                         ? 'Ads Removed!'
                         : (_purchasePending ? 'Remove Ads (Processing...)' : 'Remove Ads ($priceLabel)'),
@@ -858,10 +928,11 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                     key: _removeAdsKey,
                   ),
                   SizedBox(height: buttonVerticalPadding),
-                  _buildButton(3, 'Settings', () => _navigateTo(3, const SettingsScreen()), key: _settingsKey),
-                  SizedBox(height: buttonVerticalPadding),
-                  _buildButton(4, 'About', () => _navigateTo(4, const AboutScreen()), key: _aboutKey),
-                  SizedBox(height: buttonVerticalPadding),
+
+                  // 6. About
+                  _buildButton(5, 'About', () => _navigateTo(5, const AboutScreen()), key: _aboutKey),
+                  // SizedBox(height: buttonVerticalPadding), // Removed extra padding after last button
+
                   if (_errorMessage != null)
                     Padding(
                       padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
@@ -890,7 +961,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             ),
           ),
           Positioned(
-            top: topPaddingValue - screenHeight * 0.02,
+            top: topPaddingValue - screenHeight * 0.02, // Align with visual top of title
             left: screenWidth * 0.03,
             child: SafeArea(
               child: Material(
@@ -898,7 +969,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                 color: Colors.transparent,
                 child: IconButton(
                   icon: Icon(Icons.arrow_back, color: Colors.black, size: backIconVisualSize),
-                  onPressed: () async {
+                  onPressed: () async { // Using original back arrow logic
                     if (_currentMenuTutorialStep != MenuTutorialStep.none) {
                       _advanceMenuTutorial();
                       if (_currentMenuTutorialStep == MenuTutorialStep.none ||
@@ -917,26 +988,6 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-
-          // --- START: New Tutorial Button (Moved from Howtoplay.dart) ---
-          Positioned(
-            top: topPaddingValue, // Matches the Howtoplay.dart's top calculation
-            right: screenWidth * 0.05, // Matches the Howtoplay.dart's 'padding' (screenWidth * 0.05)
-            child: ElevatedButton(
-              style: tutorialButtonStyle,
-              onPressed: _startHomeTutorial, // Retains the original functionality
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text("Tutorial"),
-                  SizedBox(width: 8),
-                  Icon(Icons.school, size: screenHeight * 0.025), // Using a 'school' icon for tutorial
-                ],
-              ),
-            ),
-          ),
-          // --- END: New Tutorial Button ---
-
           if (_currentMenuTutorialStep != MenuTutorialStep.none && _prefsForMenuTutorialLoaded)
             _buildMenuTutorialHintOverlayWidget(),
         ],

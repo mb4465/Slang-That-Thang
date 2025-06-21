@@ -61,8 +61,8 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
   final GlobalKey _cardFrontStackKey = GlobalKey();
 
   final Map<CardFrontTutorialStep, String> _tutorialTexts = {
-    CardFrontTutorialStep.term: "Use this icon to see the generations and their timeframes so you can guess which generation the slang word might come from for an extra point!",
-    CardFrontTutorialStep.generationIcon: "You can see the Generation rules here.",
+    CardFrontTutorialStep.term: "This is the slang word you need to define and use in a sentence.",
+    CardFrontTutorialStep.generationIcon: "View the list of generations and their timeframes.",
     CardFrontTutorialStep.tapToFlip: "Tap on the screen to flip the card and see the slang word meaning.",
   };
 

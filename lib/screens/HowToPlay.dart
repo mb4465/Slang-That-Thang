@@ -16,8 +16,8 @@ class Howtoplay extends StatefulWidget {
 class _HowToPlayState extends State<Howtoplay> {
   int _currentImageIndex = 0;
   final List<String> _imagePaths = [
-    'assets/images/basics-objectives-tutorial-without-logo.svg',
-    'assets/images/how-to-play-without-logo.svg',
+    'assets/images/basics-objectives-without-logo.png',
+    'assets/images/how-to-play-without-logo.png',
   ];
 
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -86,7 +86,7 @@ class _HowToPlayState extends State<Howtoplay> {
           Container(
             decoration: const BoxDecoration(color: Colors.white),
             child: Center(
-              child: SvgPicture.asset(
+              child: Image.asset(
                 _imagePaths[_currentImageIndex],
                 fit: BoxFit.contain,
               ),

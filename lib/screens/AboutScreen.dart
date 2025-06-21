@@ -50,8 +50,8 @@ class _AboutScreenState extends State<AboutScreen> {
         children: [
           // Main Content Image: about.svg, filling the screen similar to GenerationalCardScreen
           Center(
-            child: SvgPicture.asset(
-              'assets/images/about-without-logo.svg', // Your about.svg image
+            child: Image.asset(
+              'assets/images/about-without-logo.png', // Your about.svg image
               fit: BoxFit.contain, // Scales the image to fit the screen, preserving aspect ratio
             ),
           ),

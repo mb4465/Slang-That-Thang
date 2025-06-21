@@ -324,6 +324,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final double nextButtonHorizontalPadding = screenWidth * 0.07;
     final double nextButtonVerticalPadding = screenHeight * 0.015;
 
+    // --- NEW: Calculate responsive font size for the main tutorial title ---
+    final double tutorialTitleFontSize = (screenWidth * 0.065).clamp(20.0, 34.0);
+    // --- END NEW ---
+
     Widget? imageWidget;
     if (assetPath != null) {
       Widget rawImage = assetPath.toLowerCase().endsWith('.svg')
@@ -376,7 +380,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             Text(
                               title,
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black),
+                              // --- MODIFIED: Use dynamic font size for the title ---
+                              style: TextStyle(fontSize: tutorialTitleFontSize, fontWeight: FontWeight.bold, color: Colors.black),
+                              // --- END MODIFICATION ---
                             ),
                             const SizedBox(height: 20),
                             Flexible(
@@ -452,6 +458,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ));
   }
 
+
   // MODIFIED: Pass isExpanded flag to _buildImageBasedTutorialLayout
   Widget _buildWelcomeLayoutWidget() => _buildImageBasedTutorialLayout(
       title: "Welcome to",
@@ -461,13 +468,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       isExpanded: _isImageTutorialExpanded // Pass the state
   );
   Widget _buildBasicsObjectiveLayoutWidget() => _buildImageBasedTutorialLayout(
-      title: "Basics & Objective",
-      assetPath: 'assets/images/basics-objectives-no-heading-without-logo.svg',
+      title: "BASICS & OBJECTIVE",
+      assetPath: 'assets/images/basics-objectives-no-heading-without-logo-p.png',
       isExpanded: _isImageTutorialExpanded // Pass the state
   );
   Widget _buildHowToPlayLayoutWidget() => _buildImageBasedTutorialLayout(
-      title: "How to Play",
-      assetPath: 'assets/images/how-to-play-no-heading-without-logo.svg',
+      title: "HOW TO PLAY",
+      assetPath: 'assets/images/how-to-play-no-heading-without-logo-p.png',
       isExpanded: _isImageTutorialExpanded // Pass the state
   );
 
