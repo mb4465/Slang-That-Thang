@@ -102,7 +102,7 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
 
   Future<void> _playAudio(String assetPath) async {
     if (!isSoundEnabled) return;
-    await _audioPlayer.stop();
+    await _audioPlayer.stop(); // Stop any currently playing sound
     await _audioPlayer.play(AssetSource(assetPath));
   }
 
@@ -183,25 +183,17 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
         Offset newCardInBeginOffset;
 
         if (_cardAnimationStyle == CardAnimationStyle.next) {
-          // DESIRED FOR NEXT: New card from BOTTOM to UP
-          // Old card should slide UP to make space
-          oldCardOutEndOffset = const Offset(0, -0.75); // Old card slides UP
-          // New card comes from BOTTOM
+          oldCardOutEndOffset = const Offset(0, -0.75);
           newCardInBeginOffset = const Offset(0, 1.0);
-        } else { // _cardAnimationStyle == CardAnimationStyle.previous
-          // DESIRED FOR PREVIOUS: New card (previous) from TOP to DOWN
-          // Old card should slide DOWN to make space
-          oldCardOutEndOffset = const Offset(0, 0.75);  // Old card slides DOWN
-          // New card (previous) comes from TOP
+        } else {
+          oldCardOutEndOffset = const Offset(0, 0.75);
           newCardInBeginOffset = const Offset(0, -1.0);
         }
 
-        // Curve for outgoing element
         final outCurve = CurvedAnimation(
           parent: _cardAnimationController,
           curve: Curves.easeInCubic,
         );
-        // Curve for incoming element
         final inCurve = CurvedAnimation(
           parent: _cardAnimationController,
           curve: const Interval(
@@ -213,7 +205,6 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
 
         return Stack(
           children: [
-            // "Old Card" (effect applied to the new content, making it look like old is leaving)
             FadeTransition(
               opacity: Tween<double>(begin: 1.0, end: 0.0).animate(outCurve),
               child: SlideTransition(
@@ -224,7 +215,6 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
                 child: child,
               ),
             ),
-            // "New Card"
             FadeTransition(
               opacity: Tween<double>(begin: 0.0, end: 1.0).animate(inCurve),
               child: SlideTransition(
@@ -276,7 +266,11 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
                   color: isCardFront ? Colors.black : Colors.white,
                   size: iconSize,
                 ),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  // Play the sound when the back arrow is pressed
+                  _playAudio('audio/rules.mp3'); // Corrected path if needed, see note below
+                  Navigator.pop(context);
+                },
               ),
             ),
           ),
