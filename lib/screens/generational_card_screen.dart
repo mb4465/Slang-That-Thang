@@ -8,11 +8,15 @@ import '../data/globals.dart';
 class GenerationalCardScreen extends StatelessWidget {
   const GenerationalCardScreen({super.key});
 
-  Future<void> _playUiClickSound() async {
+  // Renamed for clarity and updated to use the correct sound path
+  Future<void> _playBackNavigationSound() async {
     if (await getSoundEnabled()) {
       final player = AudioPlayer();
-      await player.setReleaseMode(ReleaseMode.stop);
-      await player.play(AssetSource('audio/click.mp3'));
+      // ReleaseMode.stop will release the player resources after playback is complete.
+      await player.setReleaseMode(ReleaseMode.stop); 
+      await player.play(AssetSource('audio/rules.mp3'));
+      // No explicit dispose here as it's a StatelessWidget. 
+      // For more complex audio needs, convert to StatefulWidget.
     }
   }
 
@@ -57,7 +61,7 @@ class GenerationalCardScreen extends StatelessWidget {
                 splashRadius: consistentIconSize, // Match splash to icon size
                 tooltip: 'Back',
                 onPressed: () async {
-                  await _playUiClickSound();
+                  await _playBackNavigationSound(); // Use the updated method
                   if (context.mounted) {
                     Navigator.pop(context);
                   }

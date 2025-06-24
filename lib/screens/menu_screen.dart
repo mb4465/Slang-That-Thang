@@ -76,6 +76,7 @@ class _TutorialCutoutClipper extends CustomClipper<Path> {
 class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   late AnimationController _buttonPressController;
   int? _selectedButtonIndex;
+  final AudioPlayer _audioPlayer = AudioPlayer(); // Shared AudioPlayer instance
 
   final InAppPurchase _iap = InAppPurchase.instance;
   late StreamSubscription<List<PurchaseDetails>> _sub;
@@ -109,13 +110,13 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
   // Tutorial hint texts
   final Map<MenuTutorialStep, String> tutorialTexts = {
-    MenuTutorialStep.tutorialButton: "Tutorial", // Hint for Tutorial button (keeps button text same when highlighted)
+    MenuTutorialStep.tutorialButton: "Tap here to restart the full app tutorial, including game play.",
     MenuTutorialStep.howToPlay: "You can see the game rules here.",
     MenuTutorialStep.generationalCard: "View the list of generations and their timeframes.",
     MenuTutorialStep.settings: "You can mute/unmute all the sounds.",
-    MenuTutorialStep.removeAds: "You get 20 rounds free. After that, you'll need to pay \$4.99 for Full Access.",
-    MenuTutorialStep.about: "Learn more about SLANG THAT THANG!! and how to play!",
-    MenuTutorialStep.backArrow: "Click the back arrow to go back.",
+    MenuTutorialStep.removeAds: "You get 20 rounds free. After that, you'll need to pay to remove ads for Full Access.",
+    MenuTutorialStep.about: "Learn more about SLANG THAT THANG!!", // Simplified
+    MenuTutorialStep.backArrow: "Click the back arrow to go back to the Home Screen.",
   };
 
   @override
@@ -216,7 +217,6 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
-            // Start tutorial with the "Tutorial" button (new first step)
             _currentMenuTutorialStep = MenuTutorialStep.tutorialButton;
             _menuTutorialAnimationController?.repeat();
           });
@@ -231,7 +231,6 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   void _advanceMenuTutorial() async {
     if (!mounted) return;
     MenuTutorialStep nextStep = MenuTutorialStep.none;
-    // New tutorial sequence
     switch (_currentMenuTutorialStep) {
       case MenuTutorialStep.tutorialButton: nextStep = MenuTutorialStep.howToPlay; break;
       case MenuTutorialStep.howToPlay: nextStep = MenuTutorialStep.generationalCard; break;
@@ -257,7 +256,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     });
   }
 
-  Future<void> _startHomeTutorial() async {
+  Future<void> _startHomeTutorial() async { // This is an action, not a tutorial step advancement
+    await _playStandardClickSound(); // Play standard click for this action
     await setHasSeenWelcomeTutorial(false);
     await setHasSeenBasicsTutorial(false);
     await setHasSeenHowToPlayTutorial(false);
@@ -284,6 +284,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     _sub.cancel();
     _couponController.dispose();
     _menuTutorialAnimationController?.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -345,14 +346,24 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     );
   }
 
-  Future<void> _playUiClickSound() async {
+  // --- RENAMED and MODIFIED Sound Methods ---
+  Future<void> _playStandardClickSound() async {
     if (await getSoundEnabled()) {
-      final player = AudioPlayer();
-      await player.play(AssetSource('audio/click.mp3'));
+      await _audioPlayer.play(AssetSource('audio/click.mp3'));
     }
   }
 
+  Future<void> _playTutorialAdvanceSound() async {
+    if (await getSoundEnabled()) {
+      await _audioPlayer.play(AssetSource('audio/rules.mp3'));
+    }
+  }
+  // --- END Sound Method Modifications ---
+
+
   Future<void> _initiateInAppPurchase() async {
+    // This action itself might have a sound if considered a UI interaction
+    // For now, let's assume the button click (_showRemoveAdsOptionsDialog) handles the sound.
     final pd = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
     if (pd == null) {
       if (!mounted) return;
@@ -395,6 +406,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                 TextField(controller: _couponController, decoration: const InputDecoration(hintText: "Coupon Code", border: OutlineInputBorder()), autofocus: true),
                 const SizedBox(height: 20),
                 _buildDialogGameButton(text: 'Submit', onPressed: () async {
+                  await _playStandardClickSound(); // Sound for submit button
                   final enteredCode = _couponController.text.trim();
                   Navigator.of(dialogContext).pop();
                   if (enteredCode == _kGooglePlayReviewCouponCode) {
@@ -410,7 +422,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
-          actions: <Widget>[TextButton(child: Text('Cancel', style: TextStyle(color: Theme.of(context).primaryColor)), onPressed: () => Navigator.of(dialogContext).pop())],
+          actions: <Widget>[TextButton(child: Text('Cancel', style: TextStyle(color: Theme.of(context).primaryColor)), onPressed: () async {
+            await _playStandardClickSound(); // Sound for cancel
+            Navigator.of(dialogContext).pop();
+          })],
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
         );
       },
@@ -418,7 +433,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _showRemoveAdsOptionsDialog() async {
-    await _playUiClickSound();
+    await _playStandardClickSound(); // Sound for opening this dialog
     if (!mounted) return;
     final productDetailsForDialog = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
     final screenWidth = MediaQuery.of(context).size.width;
@@ -441,8 +456,14 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
-                _buildDialogGameButton(text: 'Enter Coupon Code', onPressed: () { Navigator.of(dialogContext).pop(); _showCouponInputDialog(); }),
-                _buildDialogGameButton(text: payButtonText, onPressed: canPay ? () { Navigator.of(dialogContext).pop(); _initiateInAppPurchase(); } : null),
+                _buildDialogGameButton(text: 'Enter Coupon Code', onPressed: () async {
+                  await _playStandardClickSound(); // Sound for button
+                  Navigator.of(dialogContext).pop(); _showCouponInputDialog();
+                }),
+                _buildDialogGameButton(text: payButtonText, onPressed: canPay ? () async {
+                  await _playStandardClickSound(); // Sound for button
+                  Navigator.of(dialogContext).pop(); _initiateInAppPurchase();
+                } : null),
               ],
             ),
           ),
@@ -450,7 +471,11 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           actions: <Widget>[
             Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
-              child: TextButton(child: Text('Cancel', style: TextStyle(fontSize: max(14.0, screenWidth * 0.04), color: Theme.of(context).hintColor)), onPressed: () => Navigator.of(dialogContext).pop()),
+              child: TextButton(child: Text('Cancel', style: TextStyle(fontSize: max(14.0, screenWidth * 0.04), color: Theme.of(context).hintColor)),
+                  onPressed: () async {
+                    await _playStandardClickSound(); // Sound for cancel
+                    Navigator.of(dialogContext).pop();
+                  }),
             ),
           ],
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
@@ -463,7 +488,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     if (_buttonPressController.isAnimating || _selectedButtonIndex != null ||
         (_currentMenuTutorialStep != MenuTutorialStep.none && _currentMenuTutorialStep != MenuTutorialStep.backArrow)) return;
 
-    await _playUiClickSound();
+    await _playStandardClickSound(); // Standard sound for navigation
     if (!mounted) return;
     setState(() => _selectedButtonIndex = index);
     _buttonPressController.forward().then((_) {
@@ -490,20 +515,18 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     if (_buttonPressController.isAnimating || _selectedButtonIndex != null ||
         (_currentMenuTutorialStep != MenuTutorialStep.none && _currentMenuTutorialStep != MenuTutorialStep.backArrow)) return;
 
-    await _playUiClickSound();
+    // Sound is played by _startHomeTutorial
     if (!mounted) return;
     setState(() => _selectedButtonIndex = index);
 
     try {
       await _buttonPressController.forward().orCancel;
       if (mounted) {
-        await _startHomeTutorial(); // Action for "Tutorial" button
+        await _startHomeTutorial(); // Action for "Tutorial" button (plays its own sound)
       }
     } catch (e) {
-      // Error handling for animation controller if needed
+      // Error handling
     } finally {
-      // Ensure button state is reset even if _startHomeTutorial navigates away
-      // or if the animation is cancelled.
       if (mounted && _selectedButtonIndex == index) {
         _buttonPressController.reset();
         setState(() => _selectedButtonIndex = null);
@@ -525,12 +548,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     if (_currentMenuTutorialStep != MenuTutorialStep.none) {
       switch (_currentMenuTutorialStep) {
         case MenuTutorialStep.tutorialButton:
-          if (key == _tutorialButtonKey) {
-            isTutorialTargetingThisButton = true;
-            // Original logic: change button text to its hint text.
-            // Since hint text for tutorialButton is "Tutorial" and button label is "Tutorial", no visible change.
-            currentButtonText = tutorialTexts[MenuTutorialStep.tutorialButton] ?? text;
-          }
+          if (key == _tutorialButtonKey) isTutorialTargetingThisButton = true;
           break;
         case MenuTutorialStep.howToPlay:
           if (key == _howToPlayKey) isTutorialTargetingThisButton = true;
@@ -547,8 +565,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
         case MenuTutorialStep.about:
           if (key == _aboutKey) isTutorialTargetingThisButton = true;
           break;
-        default:
-          break;
+        default: break;
       }
     }
 
@@ -561,12 +578,13 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     if (effectivelyDisabled) {
       finalOnPressed = null;
     } else if (isTutorialTargetingThisButton && _currentMenuTutorialStep != MenuTutorialStep.backArrow) {
-      finalOnPressed = () async {
-        await _playUiClickSound();
+      // If this button is the tutorial target, its press should advance the tutorial.
+      // Sound will be played by the overlay's tap.
+      finalOnPressed = () {
         _advanceMenuTutorial();
       };
     } else {
-      finalOnPressed = onTap;
+      finalOnPressed = onTap; // Standard action, associated sound is played within onTap (e.g., _navigateTo)
     }
 
     return Opacity(
@@ -575,7 +593,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
         key: key,
         offset: _selectedButtonIndex == index ? Offset(_buttonPressController.value * screenWidth, 0) : Offset.zero,
         child: GameButton(
-            text: currentButtonText,
+            text: currentButtonText, // Keep original text even if highlighted by tutorial
             width: buttonWidth,
             height: buttonHeight,
             onPressed: finalOnPressed,
@@ -656,22 +674,20 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
     bool pointUpwards;
     if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) {
-      pointUpwards = false; // Hint below back arrow
+      pointUpwards = false;
     } else {
-      // Generic rule: if button center is in lower 40% of screen, point upwards.
       pointUpwards = targetCenter.dy > screenHeight * 0.6;
     }
 
     double estimatedTextHeight = (tutorialTexts[_currentMenuTutorialStep] ?? "").length > 40
-        ? hintTextFontSize * 3.5 // Approximate height for 2-3 lines
-        : hintTextFontSize * 2.0; // Approximate height for 1-2 lines
+        ? hintTextFontSize * 3.5
+        : hintTextFontSize * 2.0;
     double estimatedHintBlockHeight = estimatedTextHeight + (hintPaddingVertical * 2);
 
     double verticalOffsetSpacing = 10 * scaleFactor;
-    // Specific offset for buttons that might be low on screen AND are pointing upwards
     if (pointUpwards &&
         (_currentMenuTutorialStep == MenuTutorialStep.settings ||
-            _currentMenuTutorialStep == MenuTutorialStep.removeAds || // Added Remove Ads
+            _currentMenuTutorialStep == MenuTutorialStep.removeAds ||
             _currentMenuTutorialStep == MenuTutorialStep.about)) {
       verticalOffsetSpacing = (targetSize.height * 0.25) + (20 * scaleFactor);
     } else if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) {
@@ -700,14 +716,13 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     return Positioned.fill(
       child: GestureDetector(
         onTap: () async {
-          await _playUiClickSound(); // Play sound before advancing for overlay tap
+          await _playTutorialAdvanceSound(); // Play tutorial sound for overlay tap
           _advanceMenuTutorial();
         },
         child: AnimatedBuilder(
           animation: Listenable.merge([_menuTutorialAnimationController!, _menuTutorialPointerOffset!]),
           builder: (context, child) {
             final double currentAnimatedScale = _menuTutorialCircleScale!.value;
-
             double animatedHighlightWidth;
             double animatedHighlightHeight;
             BorderRadius animatedHighlightBorderRadius;
@@ -737,47 +752,36 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             if (currentHintBlockTopPosition < topSafeArea) {
               currentHintBlockTopPosition = topSafeArea;
             } else if (currentHintBlockTopPosition + estimatedHintBlockHeight > bottomSafeArea) {
-              // Try to flip if it overflows bottom and wasn't already pointing up, and there's space above
               if (!pointUpwards && (targetCenter.dy - referenceTargetHeight / 2 - estimatedHintBlockHeight - 10 * scaleFactor) > topSafeArea) {
                 double newVerticalOffsetSpacing = 10 * scaleFactor;
-                // Recalculate specific offset if applicable for newly flipped elements
                 if (_currentMenuTutorialStep == MenuTutorialStep.settings ||
                     _currentMenuTutorialStep == MenuTutorialStep.removeAds ||
                     _currentMenuTutorialStep == MenuTutorialStep.about) {
                   newVerticalOffsetSpacing = (targetSize.height * 0.25) + (20 * scaleFactor);
-                } else if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) { // Should not happen for backArrow as it's pointUpwards=false
+                } else if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) {
                   newVerticalOffsetSpacing = 15 * scaleFactor;
                 }
-
                 double newHintBlockVerticalOffset = -(referenceTargetHeight / 2 + estimatedHintBlockHeight * 0.5 + newVerticalOffsetSpacing);
                 currentHintBlockTopPosition = targetCenter.dy + newHintBlockVerticalOffset + _menuTutorialPointerOffset!.value.dy;
-
                 if (currentHintBlockTopPosition < topSafeArea) currentHintBlockTopPosition = topSafeArea;
-              } else { // Stick to bottom safe area if cannot flip or no space
+              } else {
                 currentHintBlockTopPosition = bottomSafeArea - estimatedHintBlockHeight;
               }
             }
-            // Final check for top boundary after potential flip or adjustment
             if (currentHintBlockTopPosition < topSafeArea) currentHintBlockTopPosition = topSafeArea;
-
 
             double currentHintBlockLeft = hintBlockLeftPosition;
             if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) {
-              // Estimate text width to prevent overflow for back arrow hint
               final tempTextPainter = TextPainter(
                 text: TextSpan(text: tutorialTexts[_currentMenuTutorialStep], style: TextStyle(fontSize: hintTextFontSize)),
                 textDirection: TextDirection.ltr,
                 textAlign: TextAlign.left,
-              )..layout(maxWidth: screenWidth * 0.7 - hintPaddingHorizontal * 2); // Max width for hint near back arrow
-
+              )..layout(maxWidth: screenWidth * 0.7 - hintPaddingHorizontal * 2);
               double estimatedTextContentWidth = tempTextPainter.width;
               double estimatedTextContainerWidth = estimatedTextContentWidth + hintPaddingHorizontal * 2;
-
-              // Adjust left position if it would overflow right screen edge
               if (currentHintBlockLeft + estimatedTextContainerWidth > screenWidth - (20 * scaleFactor)) {
                 currentHintBlockLeft = screenWidth - (20 * scaleFactor) - estimatedTextContainerWidth;
               }
-              // Ensure it doesn't go off the left screen edge
               if (currentHintBlockLeft < 20 * scaleFactor) {
                 currentHintBlockLeft = 20 * scaleFactor;
               }
@@ -819,13 +823,13 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   right: _currentMenuTutorialStep == MenuTutorialStep.backArrow ? null : hintBlockRightPosition,
                   top: currentHintBlockTopPosition,
                   width: _currentMenuTutorialStep == MenuTutorialStep.backArrow
-                      ? (screenWidth * 0.7) // Constrain width for back arrow hint
-                      : null, // Full width for other hints (centered by left/right constraints)
+                      ? (screenWidth * 0.7)
+                      : null,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: _currentMenuTutorialStep == MenuTutorialStep.backArrow
-                        ? CrossAxisAlignment.start // Align back arrow hint text left
-                        : CrossAxisAlignment.center, // Center other hint texts
+                        ? CrossAxisAlignment.start
+                        : CrossAxisAlignment.center,
                     children: [
                       Opacity(
                         opacity: _menuTutorialTextOpacity!.value,
@@ -896,28 +900,18 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(height: topPaddingValue + titleFontSize + screenHeight * 0.05), // Space for title and back arrow
+                  SizedBox(height: topPaddingValue + titleFontSize + screenHeight * 0.05),
 
-                  // New Button Order
-                  // 1. Tutorial
                   _buildButton(0, 'Tutorial', () => _handleTutorialPress(0), key: _tutorialButtonKey),
                   SizedBox(height: buttonVerticalPadding),
-
-                  // 2. How to Play
                   _buildButton(1, 'How to Play', () => _navigateTo(1, const Howtoplay()), key: _howToPlayKey),
                   SizedBox(height: buttonVerticalPadding),
-
-                  // 3. Generations
                   _buildButton(2, 'Generations', () => _navigateTo(2, const GenerationalCardScreen()), key: _generationalCardKey),
                   SizedBox(height: buttonVerticalPadding),
-
-                  // 4. Settings
                   _buildButton(3, 'Settings', () => _navigateTo(3, const SettingsScreen()), key: _settingsKey),
                   SizedBox(height: buttonVerticalPadding),
-
-                  // 5. Remove Ads
                   _buildButton(
-                    4, // New index
+                    4,
                     _adsRemoved
                         ? 'Ads Removed!'
                         : (_purchasePending ? 'Remove Ads (Processing...)' : 'Remove Ads ($priceLabel)'),
@@ -928,10 +922,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                     key: _removeAdsKey,
                   ),
                   SizedBox(height: buttonVerticalPadding),
-
-                  // 6. About
                   _buildButton(5, 'About', () => _navigateTo(5, const AboutScreen()), key: _aboutKey),
-                  // SizedBox(height: buttonVerticalPadding), // Removed extra padding after last button
 
                   if (_errorMessage != null)
                     Padding(
@@ -961,7 +952,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             ),
           ),
           Positioned(
-            top: topPaddingValue - screenHeight * 0.02, // Align with visual top of title
+            top: topPaddingValue - screenHeight * 0.02,
             left: screenWidth * 0.03,
             child: SafeArea(
               child: Material(
@@ -969,16 +960,16 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                 color: Colors.transparent,
                 child: IconButton(
                   icon: Icon(Icons.arrow_back, color: Colors.black, size: backIconVisualSize),
-                  onPressed: () async { // Using original back arrow logic
-                    if (_currentMenuTutorialStep != MenuTutorialStep.none) {
+                  onPressed: () async {
+                    if (_currentMenuTutorialStep == MenuTutorialStep.backArrow) {
+                      // Sound and action handled by overlay's onTap.
+                      // This direct press should advance tutorial.
                       _advanceMenuTutorial();
-                      if (_currentMenuTutorialStep == MenuTutorialStep.none ||
-                          (!await getHasSeenMenuScreenTutorial() && _currentMenuTutorialStep == MenuTutorialStep.backArrow)) {
-                        await _playUiClickSound();
-                        if (mounted) Navigator.pop(context);
-                      }
                     } else {
-                      await _playUiClickSound();
+                      // Normal back press or tutorial active on another element.
+                      // Overlay tap handles tutorial advance for other elements.
+                      // This direct press is a standard navigation.
+                      await _playStandardClickSound();
                       if (mounted) Navigator.pop(context);
                     }
                   },

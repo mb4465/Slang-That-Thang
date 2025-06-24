@@ -48,8 +48,16 @@ class _HowToPlayState extends State<Howtoplay> {
         await _audioPlayer.stop();
         await _audioPlayer.play(AssetSource('audio/rules.mp3'));
       } finally {
-        Future.delayed(const Duration(seconds: 3), () {
-          _isSoundPlaying = false;
+        // Resetting _isSoundPlaying sooner if play() errors or completes quickly.
+        // The original 3-second delay might be too long if sound is shorter or fails.
+        // A more robust approach might be to reset it in onPlayerComplete,
+        // but for a simple click, this should be fine.
+        // If sounds are very short, the delay might prevent rapid clicks.
+        // For now, keeping it as is, but it's a point of potential refinement.
+        Future.delayed(const Duration(milliseconds: 500), () { // Reduced delay
+          if(mounted) { // Check if widget is still mounted
+            _isSoundPlaying = false;
+          }
         });
       }
     }
@@ -122,7 +130,10 @@ class _HowToPlayState extends State<Howtoplay> {
             left: padding,
             child: IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.black, size: iconSize),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () async {
+                await _loadAndPlayClickSound();
+                if (mounted) Navigator.pop(context);
+              },
               tooltip: 'Go back',
             ),
           ),

@@ -12,10 +12,9 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  // Removed _version and _appName as they are now assumed to be part of the SVG
-  // Removed _initPackageInfo as package_info_plus is no longer needed for display
+  final AudioPlayer _audioPlayer = AudioPlayer(); // Shared AudioPlayer instance
 
-  Future<void> _playUiClickSound() async {
+  Future<void> _playBackNavigationSound() async { // Renamed and updated
     bool soundEnabled = true;
     try {
       soundEnabled = await getSoundEnabled();
@@ -24,9 +23,14 @@ class _AboutScreenState extends State<AboutScreen> {
     }
 
     if (soundEnabled) {
-      final player = AudioPlayer();
-      await player.play(AssetSource('audio/click.mp3'));
+      await _audioPlayer.play(AssetSource('audio/rules.mp3')); // Changed sound path
     }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose(); // Dispose of the shared AudioPlayer
+    super.dispose();
   }
 
   @override
@@ -86,7 +90,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   splashRadius: backIconSize,
                   tooltip: 'Back',
                   onPressed: () async {
-                    await _playUiClickSound();
+                    await _playBackNavigationSound(); // Use updated sound method
                     if (mounted) {
                       Navigator.pop(context);
                     }

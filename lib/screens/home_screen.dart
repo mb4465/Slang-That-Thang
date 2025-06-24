@@ -60,6 +60,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final GlobalKey _menuButtonKey = GlobalKey();
   final GlobalKey _homeScreenStackKey = GlobalKey();
 
+  // --- ADDED: AudioPlayer instance ---
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  // --- END ADDITION ---
+
   final Map<HomeScreenTutorialStep, String> _tutorialTexts = {
     HomeScreenTutorialStep.startGameButton: "Start a new game.",
     HomeScreenTutorialStep.menuButton: "Click the Menu to see more options.",
@@ -217,6 +221,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
   }
 
+  // --- MODIFIED: Method to handle Tutorial Next button press ---
+  Future<void> _onTutorialNextButtonPressed() async {
+    // await _playUiClickSound(); // Play sound // OLD: Played click.mp3
+    await _playTutorialRuleSound(); // NEW: Play rules.mp3 for tutorial advancement
+    _advanceHomeScreenTutorial(); // Then advance tutorial
+  }
+  // --- END MODIFICATION ---
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -237,6 +249,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _buttonSlideOutController.dispose();
     _tutorialHintAnimationController?.dispose();
     _welcomeTutorialDelayTimer?.cancel();
+    // --- ADDED: Dispose AudioPlayer ---
+    _audioPlayer.dispose();
+    // --- END ADDITION ---
     super.dispose();
   }
 
@@ -262,19 +277,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _playUiClickSound() async {
     if (await getSoundEnabled()) {
-      final player = AudioPlayer();
-      await player.play(AssetSource('audio/click.mp3'));
+      await _audioPlayer.play(AssetSource('audio/click.mp3'));
     }
   }
+
+  // --- NEW METHOD: Play tutorial rule sound ---
+  Future<void> _playTutorialRuleSound() async {
+    if (await getSoundEnabled()) {
+      await _audioPlayer.play(AssetSource('audio/rules.mp3'));
+    }
+  }
+  // --- END NEW METHOD ---
 
   void _onGameOrMenuButtonPressed(VoidCallback navigateAction, HomeScreenTutorialStep buttonTutorialStep) async {
     if (_currentHomeScreenTutorialStep != HomeScreenTutorialStep.none) {
       if (_currentHomeScreenTutorialStep == buttonTutorialStep) {
+        await _playUiClickSound(); // Play click.mp3 sound before advancing for target tutorial buttons
         _advanceHomeScreenTutorial(); // Only advance tutorial if the target button is pressed
       }
       return; // Do not perform navigation if tutorial is active and not on the target button
     }
-    await _playUiClickSound();
+    await _playUiClickSound(); // Play click.mp3 for normal button press
     _triggerButtonSlideOutAndNavigate(navigateAction);
   }
 
@@ -395,9 +418,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             const SizedBox(height: 25),
                             // MODIFIED: This ElevatedButton now uses responsive values
                             ElevatedButton(
-                              onPressed: () {
-                                _advanceHomeScreenTutorial();
-                              },
+                              // --- MODIFIED: Use _onTutorialNextButtonPressed ---
+                              onPressed: _onTutorialNextButtonPressed,
+                              // --- END MODIFICATION ---
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.black,
@@ -528,7 +551,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     return Positioned.fill(
       // For button highlights, tapping the overlay still advances the tutorial step
-        child: GestureDetector(onTap: _advanceHomeScreenTutorial,
+      // --- MODIFIED: call _onTutorialNextButtonPressed for tap when highlighting buttons ---
+        child: GestureDetector(onTap: _onTutorialNextButtonPressed,
+            // --- END MODIFICATION ---
             child: AnimatedBuilder(animation: Listenable.merge([_tutorialHintAnimationController!, _tutorialPointerOffset!]),
                 builder: (context, child) {
                   final double currentAnimatedScale = _tutorialCircleScale!.value;
