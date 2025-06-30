@@ -30,12 +30,14 @@ class CardFront extends StatefulWidget {
   final String term;
   final Function(CardFrontTutorialStep step) onTutorialStepChange;
   final CardFrontTutorialStep initialTutorialStep;
+  final VoidCallback? onHistoryIconPressed; // New callback
 
   const CardFront({
     super.key,
     required this.term,
     required this.onTutorialStepChange,
     required this.initialTutorialStep,
+    this.onHistoryIconPressed, // New callback
   });
 
   @override
@@ -165,7 +167,6 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
     ]).animate(clampedHandScaleParent);
   }
 
-  // --- ADDED: Sound Methods ---
   Future<void> _playStandardClickSound() async {
     if (await getSoundEnabled()) {
       final player = AudioPlayer();
@@ -181,11 +182,18 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
       player.onPlayerComplete.first.then((_) => player.dispose());
     }
   }
-  // --- END ADDITION ---
+  
+  Future<void> _playHistoryButtonSound() async {
+    if (await getSoundEnabled()) {
+      final player = AudioPlayer();
+      // Changed to click.mp3 as ui_tap.mp3 was causing issues
+      await player.play(AssetSource('audio/click.mp3')); 
+      player.onPlayerComplete.first.then((_) => player.dispose());
+    }
+  }
 
   void _advanceTutorialStep() async {
     if (!mounted) return;
-    // Play tutorial sound first, only if advancing from a known step
     if (_currentTutorialStep != CardFrontTutorialStep.none) {
       await _playTutorialAdvanceSound();
     }
@@ -208,14 +216,12 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
         break;
       case CardFrontTutorialStep.tapToFlip:
         await setHasSeenCardFrontTapToFlipTutorial(true);
-        nextStep = CardFrontTutorialStep.none; // This will effectively "finish" front card tutorial
+        nextStep = CardFrontTutorialStep.none;
         break;
       case CardFrontTutorialStep.none:
-      // If already none, do nothing further (sound already skipped)
         return;
     }
 
-    // Ensure state update happens after sound and async operations
     if (mounted) {
       setState(() {
         _currentTutorialStep = nextStep;
@@ -244,7 +250,7 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
   void dispose() {
     _tutorialAnimationController?.dispose();
     _handAnimationController?.dispose();
-    _audioPlayer.dispose(); // ADDED
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -276,16 +282,12 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
                   child: IconButton(
                     icon: Icon(Icons.close, color: Colors.black54),
                     tooltip: 'Close',
-                    onPressed: () async { // MODIFIED
-                      // If generationIcon tutorial is active, its advance sound is played by _advanceTutorialStep.
-                      // Otherwise, play standard click for closing.
+                    onPressed: () async {
                       if (_currentTutorialStep == CardFrontTutorialStep.generationIcon) {
-                        _advanceTutorialStep(); // This will play rules.mp3 and then update state
+                        _advanceTutorialStep();
                       } else {
                         await _playStandardClickSound();
                       }
-                      // This setState is for hiding the _showGenerationsOverlay specifically.
-                      // _advanceTutorialStep will handle its own state changes for the tutorial UI.
                       if (mounted) {
                         setState(() { _showGenerationsOverlay = false; });
                       }
@@ -307,7 +309,6 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
   }
 
   Widget _buildCardFrontTutorialOverlayWidget() {
-    // ... (rest of the method remains the same, its onTap calls _advanceTutorialStep which now handles sound)
     if (_tutorialAnimationController == null ||
         _tutorialCircleScale == null || _tutorialCircleOpacity == null ||
         _tutorialPointerOffset == null || _tutorialTextOpacity == null ||
@@ -361,8 +362,8 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
     if (_currentTutorialStep == CardFrontTutorialStep.term) {
       pointUpwards = targetCenter.dy > screenHeight * 0.6;
     } else if (_currentTutorialStep == CardFrontTutorialStep.generationIcon) {
-      pointUpwards = false; // Text appears to the left for generation icon
-    } else { // Should not happen for other steps needing this logic
+      pointUpwards = false; 
+    } else { 
       pointUpwards = targetCenter.dy > screenHeight * 0.6;
     }
     double estimatedTextHeight = (_tutorialTexts[_currentTutorialStep] ?? "").length > 40 ? hintTextFontSize * 3.0 : hintTextFontSize * 1.8;
@@ -373,27 +374,24 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
         : targetCenter.dy + (targetSize.height/2) + verticalOffsetSpacing;
     double hintBlockLeftPosition = 20 * scaleFactor;
     double? hintBlockRightPosition = 20 * scaleFactor;
-    double? textWidthConstraint; // For generationIcon text
+    double? textWidthConstraint; 
     if (_currentTutorialStep == CardFrontTutorialStep.generationIcon) {
-      textWidthConstraint = screenWidth * 0.55; // Max width for the text box
-      // Calculate actual required width for the text box
+      textWidthConstraint = screenWidth * 0.55; 
       final tempTextPainter = TextPainter(
           text: TextSpan(text: _tutorialTexts[_currentTutorialStep], style: TextStyle(fontSize: hintTextFontSize)),
           textDirection: TextDirection.ltr)..layout(maxWidth: textWidthConstraint - hintPaddingHorizontal *2);
       double estimatedTextContentWidth = tempTextPainter.width;
       double estimatedContainerWidth = estimatedTextContentWidth + hintPaddingHorizontal * 2 + hintTextContainerBorderWidth *2;
 
-      // Position text box to the left of the icon
       hintBlockLeftPosition = max(20 * scaleFactor, targetCenter.dx - (targetRenderBox.size.width/2) - estimatedContainerWidth - (15 * scaleFactor));
-      hintBlockRightPosition = null; // Let width be determined by content or textWidthConstraint
-      // Vertically center the text box with the icon
+      hintBlockRightPosition = null; 
       initialHintBlockTopPosition = targetCenter.dy - estimatedHintBlockHeight / 2;
     }
     final double topSafeArea = MediaQuery.of(context).padding.top + (10 * scaleFactor);
     final double bottomSafeArea = screenHeight - MediaQuery.of(context).padding.bottom - (10 * scaleFactor);
     return Positioned.fill(
       child: GestureDetector(
-        onTap: _advanceTutorialStep, // Sound handled inside _advanceTutorialStep
+        onTap: _advanceTutorialStep, 
         child: AnimatedBuilder(
           animation: Listenable.merge([_tutorialAnimationController!, _tutorialPointerOffset!, _tutorialCircleScale!, _tutorialCircleOpacity!, _tutorialTextOpacity!]),
           builder: (context, child) {
@@ -499,7 +497,6 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
   }
 
   Widget _buildTapToFlipOverlay() {
-    // ... (rest of the method remains the same, its onTap calls _advanceTutorialStep which now handles sound)
     if (_tutorialTextOpacity == null || _tutorialPointerOffset == null ||
         _handAnimationController == null || _handPositionAnimation == null || _handScaleAnimation == null) {
       return const SizedBox.shrink();
@@ -511,7 +508,7 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
     final double handIconSize = 60 * scaleFactor;
     return Positioned.fill(
       child: GestureDetector(
-        onTap: _advanceTutorialStep, // Sound handled inside _advanceTutorialStep
+        onTap: _advanceTutorialStep, 
         child: Container(
           color: Colors.black.withOpacity(0.75),
           child: AnimatedBuilder(
@@ -572,8 +569,8 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final statusBarHeight = MediaQuery.of(context).padding.top;
     final screenWidth = MediaQuery.of(context).size.width;
-    // final screenHeight = MediaQuery.of(context).size.height; // Not directly used in layout here now
     final double generationLogoSize = screenWidth * 0.085;
+    final double historyIconSize = screenWidth * 0.075; // Slightly smaller than generation icon
     bool isTutorialActive = _currentTutorialStep != CardFrontTutorialStep.none;
 
     return Scaffold(
@@ -613,28 +610,42 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
             ),
           ),
           Positioned(
-            key: _generationIconKey,
             top: statusBarHeight + 16.0,
             right: 16.0,
-            child: InkWell(
-              onTap: () async { // MODIFIED
-                // If generationIcon tutorial is active, its advance sound is played by _advanceTutorialStep.
-                // Otherwise, play standard click for opening.
-                if (isTutorialActive && _currentTutorialStep == CardFrontTutorialStep.generationIcon) {
-                  _advanceTutorialStep(); // This will play rules.mp3 internally
-                } else if (!isTutorialActive || _currentTutorialStep != CardFrontTutorialStep.generationIcon) {
-                  await _playStandardClickSound();
-                  if(mounted) setState(() { _showGenerationsOverlay = true; });
-                }
-              },
-              borderRadius: BorderRadius.circular(generationLogoSize / 2),
-              child: SvgPicture.asset(
-                'assets/images/generation-icon.svg',
-                height: generationLogoSize,
-                width: generationLogoSize,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                InkWell(
+                  key: _generationIconKey, // Keep key on the InkWell for tutorial
+                  onTap: () async {
+                    if (isTutorialActive && _currentTutorialStep == CardFrontTutorialStep.generationIcon) {
+                      _advanceTutorialStep(); 
+                    } else if (!isTutorialActive || _currentTutorialStep != CardFrontTutorialStep.generationIcon) {
+                      await _playStandardClickSound();
+                      if(mounted) setState(() { _showGenerationsOverlay = true; });
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(generationLogoSize / 2),
+                  child: SvgPicture.asset(
+                    'assets/images/generation-icon.svg',
+                    height: generationLogoSize,
+                    width: generationLogoSize,
+                  ),
+                ),
+                const SizedBox(height: 8.0), // Spacing between icons
+                IconButton(
+                  icon: Icon(Icons.history, color: Colors.black, size: historyIconSize),
+                  tooltip: 'View Card History',
+                  onPressed: () async {
+                    await _playHistoryButtonSound(); // Play sound
+                    widget.onHistoryIconPressed?.call();
+                  },
+                ),
+              ],
             ),
           ),
+          // Removed the old Positioned History Icon Button as it's now in the Column
           if (_showGenerationsOverlay) _buildGenerationsOverlay(context),
           if (isTutorialActive) _buildCardFrontTutorialOverlayWidget(),
         ],

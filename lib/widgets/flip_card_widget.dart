@@ -31,10 +31,12 @@ class FlipCardWidget extends StatefulWidget {
     required this.onNextButtonPressed,
     this.onPreviousButtonPressed, // Callback from LevelScreen
     this.onFlip,
+    this.onHistoryIconPressed, // New callback for history icon
   });
 
   final VoidCallback onNextButtonPressed;
   final VoidCallback? onPreviousButtonPressed; // Nullable callback for "previous term"
+  final VoidCallback? onHistoryIconPressed; // New callback for history icon
   final Image image;
   final String generation;
   final String term;
@@ -606,6 +608,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
                   term: widget.term,
                   initialTutorialStep: initialFrontStepForCardFront,
                   onTutorialStepChange: _handleCardFrontTutorialStepChange,
+                  onHistoryIconPressed: widget.onHistoryIconPressed, // Pass down callback
                 ),
               ),
               backWidget: SizedBox(
@@ -619,6 +622,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
                   previousButton: backCardPreviousButton,
                   nextButtonKey: _nextButtonKeyOnBackCard,
                   previousButtonKey: _previousButtonKeyOnBackCard,
+                  onHistoryIconPressed: widget.onHistoryIconPressed, // Pass down callback
                 ),
               ),
             ),

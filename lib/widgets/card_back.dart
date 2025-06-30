@@ -1,16 +1,19 @@
 // lib/widgets/card_back.dart
+import 'package:audioplayers/audioplayers.dart'; // ADDED
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../data/globals.dart'; // ADDED for getSoundEnabled
 
-class CardBack extends StatelessWidget {
+class CardBack extends StatefulWidget { // MODIFIED to StatefulWidget
   final String term;
   final String definition;
   final String generation; // Expected format: "Generation Name (YYYY - YYYY)"
   final Image image;
-  final Widget nextButton; // Renamed from `button` for clarity
-  final Widget? previousButton; // NEW: This is the "Previous" button widget passed from FlipCardWidget
-  final GlobalKey? nextButtonKey; // Key for the "Next" button, passed from FlipCardWidget
-  final GlobalKey? previousButtonKey; // NEW: Key for the "Previous" button
+  final Widget nextButton;
+  final Widget? previousButton;
+  final GlobalKey? nextButtonKey;
+  final GlobalKey? previousButtonKey;
+  final VoidCallback? onHistoryIconPressed; // New callback
 
   const CardBack({
     super.key,
@@ -18,11 +21,44 @@ class CardBack extends StatelessWidget {
     required this.definition,
     required this.image,
     required this.generation,
-    required this.nextButton, // Renamed
-    this.previousButton, // NEW
+    required this.nextButton,
+    this.previousButton,
     this.nextButtonKey,
-    this.previousButtonKey, // NEW
+    this.previousButtonKey,
+    this.onHistoryIconPressed, // New callback
   });
+
+  @override
+  State<CardBack> createState() => _CardBackState(); // ADDED createState
+}
+
+class _CardBackState extends State<CardBack> { // ADDED State class
+  bool _showGenerationsOverlay = false; // ADDED state for overlay
+  final AudioPlayer _audioPlayer = AudioPlayer(); // ADDED AudioPlayer
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose(); // ADDED dispose for audio player
+    super.dispose();
+  }
+
+  Future<void> _playStandardClickSound() async { // ADDED sound method
+    if (await getSoundEnabled()) {
+      // Create a new player instance for short sounds to avoid issues with ongoing playback.
+      final player = AudioPlayer(); 
+      await player.play(AssetSource('audio/click.mp3'));
+      // Release the player resources once playback is complete.
+      player.onPlayerComplete.first.then((_) => player.dispose());
+    }
+  }
+  
+  Future<void> _playHistoryButtonSound() async {
+    if (await getSoundEnabled()) {
+      final player = AudioPlayer();
+      await player.play(AssetSource('audio/click.mp3')); // CHANGED to click.mp3
+      player.onPlayerComplete.first.then((_) => player.dispose());
+    }
+  }
 
   String addNewlineBeforeBracket(String input) {
     final bracketIndex = input.indexOf('(');
@@ -31,28 +67,89 @@ class CardBack extends StatelessWidget {
         : input;
   }
 
+  Widget _buildGenerationsOverlayWidget(BuildContext context) { // ADDED overlay widget builder
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final overlayWidth = screenWidth * 0.85; // Similar to CardFront
+    final overlayMaxHeight = screenHeight * 0.7; // Similar to CardFront
+
+    return Center(
+      child: Material(
+        elevation: 8.0,
+        borderRadius: BorderRadius.circular(16.0),
+        color: Colors.transparent, // To ensure rounded corners from Container are visible
+        child: Container(
+          width: overlayWidth,
+          constraints: BoxConstraints(maxHeight: overlayMaxHeight, minWidth: 280),
+          decoration: BoxDecoration(
+            color: Colors.white, // White background for the overlay content
+            borderRadius: BorderRadius.circular(16.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25), // Darker shadow for better visibility on black card back
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.black54),
+                    tooltip: 'Close',
+                    onPressed: () async {
+                      await _playStandardClickSound();
+                      if (mounted) {
+                        setState(() {
+                          _showGenerationsOverlay = false;
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ),
+              Expanded( // Ensure SVG takes available space and can be centered
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0), // Padding around SVG
+                  child: SvgPicture.asset(
+                    'assets/images/generations-without-icon.svg',
+                    fit: BoxFit.contain, // Ensure SVG scales down to fit
+                    colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn), // Ensure it's black
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
         final screenHeight = constraints.maxHeight;
+        final statusBarHeight = MediaQuery.of(context).padding.top;
+        final double generationLogoSize = screenWidth * 0.085;
+        final double historyIconSize = screenWidth * 0.075; // Consistent with CardFront
 
         final double termFontSize = screenWidth * 0.08;
         final double definitionFontSize = screenWidth * 0.055;
         final double generationFontSize = screenWidth * 0.045;
         final double topImagePadding = screenHeight * 0.08;
-        // Original bottom padding for the button's container
         final double originalBottomButtonPadding = screenHeight * 0.08;
         final double bottomIconPadding = screenHeight * 0.04;
         final double sidePadding = screenWidth * 0.05;
         final double slangIconSize = screenHeight * 0.07;
-
-        // --- MODIFICATION TO ELEVATE THE ENTIRE BUTTONS ROW ---
-        // Define an additional upward offset for the button row.
-        final double buttonsUpwardOffset = screenHeight * 0.05; // Adjust this factor as needed
+        final double buttonsUpwardOffset = screenHeight * 0.05;
         final double totalBottomPaddingForButtons = originalBottomButtonPadding + buttonsUpwardOffset;
-
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -63,12 +160,12 @@ class CardBack extends StatelessWidget {
                 child: Padding(
                   padding: EdgeInsets.only(top: topImagePadding),
                   child: SizedBox(
-                    key: ValueKey('card-back-image-${image.hashCode}'),
+                    key: ValueKey('card-back-image-${widget.image.hashCode}'), // Access image via widget.image
                     width: screenWidth * 0.09,
                     height: screenHeight * 0.095,
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: image,
+                      child: widget.image, // Access image via widget.image
                     ),
                   ),
                 ),
@@ -82,7 +179,7 @@ class CardBack extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 15),
                         child: Text(
-                          term,
+                          widget.term, // Access term via widget.term
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: termFontSize,
@@ -95,7 +192,7 @@ class CardBack extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 0),
                         child: Text(
-                          definition,
+                          widget.definition, // Access definition via widget.definition
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: definitionFontSize,
@@ -107,26 +204,24 @@ class CardBack extends StatelessWidget {
                   ),
                 ),
               ),
-              // NEW: Row for both buttons at the bottom center
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Padding(
-                  // Adjust the bottom padding to include the upward offset
                   padding: EdgeInsets.only(bottom: totalBottomPaddingForButtons),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min, // Keep row as small as its children
-                    mainAxisAlignment: MainAxisAlignment.center, // Center the row itself
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (previousButton != null) // Only show previous button if provided
+                      if (widget.previousButton != null)
                         RepaintBoundary(
-                          key: previousButtonKey,
-                          child: previousButton!,
+                          key: widget.previousButtonKey, // Access previousButtonKey via widget.previousButtonKey
+                          child: widget.previousButton!, // Access previousButton via widget.previousButton
                         ),
-                      if (previousButton != null) // Add a gap between buttons if both exist
-                        SizedBox(width: screenWidth * 0.05), // Adjust spacing as needed
+                      if (widget.previousButton != null)
+                        SizedBox(width: screenWidth * 0.05),
                       RepaintBoundary(
-                        key: nextButtonKey, // The key for tutorial is still on this one
-                        child: nextButton,
+                        key: widget.nextButtonKey, // Access nextButtonKey via widget.nextButtonKey
+                        child: widget.nextButton, // Access nextButton via widget.nextButton
                       ),
                     ],
                   ),
@@ -156,7 +251,7 @@ class CardBack extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              addNewlineBeforeBracket(generation),
+                              addNewlineBeforeBracket(widget.generation), // Access generation via widget.generation
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                 fontSize: generationFontSize,
@@ -171,6 +266,44 @@ class CardBack extends StatelessWidget {
                   ),
                 ),
               ),
+              Positioned(
+                top: statusBarHeight + 16.0,
+                right: 16.0,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    InkWell(
+                      onTap: () async {
+                        await _playStandardClickSound();
+                        if (mounted) {
+                          setState(() {
+                            _showGenerationsOverlay = true;
+                          });
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(generationLogoSize / 2), // For ripple effect
+                      child: SvgPicture.asset(
+                        'assets/images/generation-icon.svg',
+                        height: generationLogoSize,
+                        width: generationLogoSize,
+                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                      ),
+                    ),
+                    const SizedBox(height: 8.0), // Spacing between icons
+                    IconButton(
+                      icon: Icon(Icons.history, color: Colors.white, size: historyIconSize), // White icon for dark background
+                      tooltip: 'View Card History',
+                      onPressed: () async {
+                        await _playHistoryButtonSound();
+                        widget.onHistoryIconPressed?.call();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // Removed the old Positioned History Icon Button as it's now in the Column
+              if (_showGenerationsOverlay) _buildGenerationsOverlayWidget(context), // ADDED conditional overlay
             ],
           ),
         );

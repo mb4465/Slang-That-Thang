@@ -44,8 +44,10 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
   late String _selectedDefinition = '';
   late String _selectedIcon = '';
 
-  final List<CardHistoryItem> _cardHistory = [];
+  final List<CardHistoryItem> _cardHistory = []; // For "previous" card functionality
+  final List<CardHistoryItem> _displayedCardsLog = []; // For session history
   CardAnimationStyle _cardAnimationStyle = CardAnimationStyle.none;
+  bool _isHistoryOverlayVisible = false;
 
   bool isCardFront = true;
 
@@ -83,6 +85,8 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
   }
 
   void _initializeFirstTerm() {
+    _displayedCardsLog.clear(); // Clear history for new session
+
     final generations = termsData.keys.toList();
     _selectedGeneration = generations[_random.nextInt(generations.length)];
     final termList = termsData[_selectedGeneration]!;
@@ -90,6 +94,14 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
     _selectedTerm = termEntry['term']!;
     _selectedDefinition = termEntry['definition']!;
     _selectedIcon = generationIcons[_selectedGeneration] ?? '';
+
+    // Log the first card
+    _displayedCardsLog.add(CardHistoryItem(
+      term: _selectedTerm,
+      definition: _selectedDefinition,
+      icon: _selectedIcon,
+      generation: _selectedGeneration,
+    ));
   }
 
   @override
@@ -121,7 +133,7 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
 
     setState(() {
       _cardAnimationStyle = CardAnimationStyle.next;
-      if (_selectedTerm.isNotEmpty) {
+      if (_selectedTerm.isNotEmpty) { // For "previous" card functionality
         _cardHistory.add(CardHistoryItem(
           term: _selectedTerm,
           definition: _selectedDefinition,
@@ -137,6 +149,14 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
       _selectedTerm = termEntry['term']!;
       _selectedDefinition = termEntry['definition']!;
       _selectedIcon = generationIcons[newSelectedGeneration] ?? '';
+
+      // Log the new card
+      _displayedCardsLog.add(CardHistoryItem(
+        term: _selectedTerm,
+        definition: _selectedDefinition,
+        icon: _selectedIcon,
+        generation: _selectedGeneration,
+      ));
     });
 
     _cardAnimationController.forward(from: 0.0).then((_) {
@@ -158,6 +178,7 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
         _selectedDefinition = previousCardData.definition;
         _selectedIcon = previousCardData.icon;
         _selectedGeneration = previousCardData.generation;
+        // Note: We don't remove from _displayedCardsLog here as it's a log of all viewed cards.
       });
 
       _cardAnimationController.forward(from: 0.0).then((_) {
@@ -169,6 +190,97 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
       print("No previous card in history.");
     }
   }
+
+  void _toggleHistoryOverlay() {
+    _playAudio('audio/click.mp3'); // Generic click sound
+    setState(() {
+      _isHistoryOverlayVisible = !_isHistoryOverlayVisible;
+    });
+  }
+
+  Widget _buildHistoryOverlayWidget() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return GestureDetector(
+      onTap: _toggleHistoryOverlay, // Close overlay by tapping outside the content
+      child: Container(
+        color: Colors.black.withOpacity(0.7),
+        child: Center(
+          child: Material( // To prevent the inner tap from closing the overlay
+            color: Colors.transparent,
+            child: GestureDetector(
+              onTap: () {}, // Trap taps on the content area
+              child: Container(
+                width: screenWidth * 0.85,
+                height: screenHeight * 0.7,
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    )
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Cards History",
+                          style: TextStyle(
+                            fontSize: 20.0,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.black),
+                          onPressed: _toggleHistoryOverlay,
+                          tooltip: "Close History",
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    Expanded(
+                      child: _displayedCardsLog.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "No terms viewed yet in this session.",
+                                style: TextStyle(color: Colors.grey, fontSize: 16),
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: _displayedCardsLog.length,
+                              itemBuilder: (context, index) {
+                                // Display in reverse chronological order
+                                final item = _displayedCardsLog[_displayedCardsLog.length - 1 - index];
+                                return ListTile(
+                                  title: Text(
+                                    item.term,
+                                    style: const TextStyle(color: Colors.black87, fontSize: 16),
+                                  ),
+                                  // You could add subtitle: Text(item.generation) or item.definition here
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildAnimatedCard(Widget cardContent) {
     return AnimatedBuilder(
@@ -242,6 +354,7 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
       key: ValueKey(_selectedTerm + _selectedGeneration),
       onNextButtonPressed: _goToNextCard,
       onPreviousButtonPressed: _cardHistory.isNotEmpty ? _goToPreviousCard : null,
+      onHistoryIconPressed: _toggleHistoryOverlay, // Pass the callback
       image: Image.asset(_selectedIcon.isNotEmpty ? _selectedIcon : 'assets/images/default_icon.png'),
       term: _selectedTerm,
       definition: _selectedDefinition,
@@ -262,18 +375,19 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
             child: SafeArea(
               child: IconButton(
                 icon: Icon(
-                  Icons.arrow_back,
+                  Icons.home, // Changed from Icons.arrow_back
                   color: isCardFront ? Colors.black : Colors.white,
                   size: iconSize,
                 ),
                 onPressed: () {
-                  // Play the sound when the back arrow is pressed
-                  _playAudio('audio/rules.mp3'); // Corrected path if needed, see note below
+                  // Play the sound when the home icon is pressed
+                  _playAudio('audio/rules.mp3');
                   Navigator.pop(context);
                 },
               ),
             ),
           ),
+          if (_isHistoryOverlayVisible) _buildHistoryOverlayWidget(), // Display history overlay
         ],
       ),
     );
