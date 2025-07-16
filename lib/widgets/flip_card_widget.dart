@@ -1,11 +1,8 @@
-// lib/widgets/flip_card_widget.dart
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
 import 'package:audioplayers/audioplayers.dart';
-// Ensure this path is correct for your project structure
-// Assuming tutorial_cutout_clipper.dart is in the same 'widgets' directory
 import 'package:test2/widgets/tutorial_cutout_clipper.dart';
 
 
@@ -16,7 +13,6 @@ import 'card_front.dart';
 enum CardTutorialOverallStep {
   none,
   frontTerm,
-  frontGeneration,
   frontTapToFlip,
   backNextButton,
 }
@@ -29,14 +25,14 @@ class FlipCardWidget extends StatefulWidget {
     required this.image,
     required this.generation,
     required this.onNextButtonPressed,
-    this.onPreviousButtonPressed, // Callback from LevelScreen
+    this.onPreviousButtonPressed,
     this.onFlip,
-    this.onHistoryIconPressed, // New callback for history icon
+    // this.onHistoryIconPressed, // REMOVED: History icon moved to LevelScreen
   });
 
   final VoidCallback onNextButtonPressed;
-  final VoidCallback? onPreviousButtonPressed; // Nullable callback for "previous term"
-  final VoidCallback? onHistoryIconPressed; // New callback for history icon
+  final VoidCallback? onPreviousButtonPressed;
+  // final VoidCallback? onHistoryIconPressed; // REMOVED
   final Image image;
   final String generation;
   final String term;
@@ -54,7 +50,6 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
 
   bool _isFront = true;
   bool _isFlipping = false;
-  // Removed _isSoundEnabled state as we check dynamically using getSoundEnabled()
   bool _prefsLoaded = false;
 
   CardTutorialOverallStep _currentCardTutorialStep = CardTutorialOverallStep.none;
@@ -71,9 +66,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
   Rect? _targetButtonRect;
   Size? _lastKnownScreenSize;
 
-  // --- ADDED: AudioPlayer instance ---
   final AudioPlayer _audioPlayer = AudioPlayer();
-  // --- END ADDITION ---
 
   final Map<CardTutorialOverallStep, String> _cardTutorialTexts = {
     CardTutorialOverallStep.backNextButton: "To move on to the next card, click the 'Next' button.",
@@ -110,13 +103,10 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
   }
 
   Future<void> _loadInitialPrefsAndTutorialState() async {
-    // _isSoundEnabled is now checked dynamically, so no need to load it here.
     CardTutorialOverallStep initialStep = CardTutorialOverallStep.none;
 
     if (!await getHasSeenCardFrontTermTutorial()) {
       initialStep = CardTutorialOverallStep.frontTerm;
-    } else if (!await getHasSeenCardFrontGenerationTutorial()) {
-      initialStep = CardTutorialOverallStep.frontGeneration;
     } else if (!await getHasSeenCardFrontTapToFlipTutorial()) {
       initialStep = CardTutorialOverallStep.frontTapToFlip;
     } else if (!_isFront && !await getHasSeenCardBackNextButtonTutorial()) {
@@ -218,21 +208,18 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
 
     if (frontStep == CardFrontTutorialStep.none) {
       bool termDone = await getHasSeenCardFrontTermTutorial();
-      bool genDone = await getHasSeenCardFrontGenerationTutorial();
       bool flipDone = await getHasSeenCardFrontTapToFlipTutorial();
 
-      if(termDone && genDone && flipDone){
+      if(termDone && flipDone){
         nextOverallStep = CardTutorialOverallStep.none;
       } else {
         if (!termDone) nextOverallStep = CardTutorialOverallStep.frontTerm;
-        else if (!genDone) nextOverallStep = CardTutorialOverallStep.frontGeneration;
         else if (!flipDone) nextOverallStep = CardTutorialOverallStep.frontTapToFlip;
         else nextOverallStep = CardTutorialOverallStep.none;
       }
     } else {
       switch (frontStep) {
         case CardFrontTutorialStep.term: nextOverallStep = CardTutorialOverallStep.frontTerm; break;
-        case CardFrontTutorialStep.generationIcon: nextOverallStep = CardTutorialOverallStep.frontGeneration; break;
         case CardFrontTutorialStep.tapToFlip: nextOverallStep = CardTutorialOverallStep.frontTapToFlip; break;
         case CardFrontTutorialStep.none: break;
       }
@@ -252,10 +239,8 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
     }
   }
 
-  // --- ADDED: Sound Methods ---
   Future<void> _playStandardClickSound() async {
     if (await getSoundEnabled()) {
-      // Use a new player for short sounds to avoid issues if one is already playing
       final player = AudioPlayer();
       await player.play(AssetSource('audio/next_card.mp3'));
       player.onPlayerComplete.first.then((_) => player.dispose());
@@ -269,10 +254,8 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
       player.onPlayerComplete.first.then((_) => player.dispose());
     }
   }
-  // --- END ADDITION ---
 
   void _advanceBackCardTutorial() async {
-    // Sound is played by the caller (overlay tap or button press)
     if (_currentCardTutorialStep == CardTutorialOverallStep.backNextButton) {
       await setHasSeenCardBackNextButtonTutorial(true);
       if (mounted) {
@@ -289,14 +272,12 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
   @override
   void dispose() {
     _cardTutorialAnimationController?.dispose();
-    _audioPlayer.dispose(); // Dispose the main audio player
+    _audioPlayer.dispose();
     super.dispose();
   }
 
   void _playFlipSound() async {
     if (await getSoundEnabled()) {
-      // Use the class-level _audioPlayer for the flip sound if it's not busy,
-      // or create a new one. For simplicity with potential overlaps, new one is safer.
       final player = AudioPlayer();
       await player.play(AssetSource('audio/card_flip.mp3'));
       player.onPlayerComplete.first.then((_) => player.dispose());
@@ -306,27 +287,19 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
   void _handleFlip() async {
     if (_isFlipping || !_prefsLoaded) return;
 
-    // Prevent flipping if term or generation tutorial on front card is active and has not been advanced by its specific overlay.
-    // CardFront's overlay tap handles advancing these. This is a safeguard.
     if (_isFront &&
-        (_currentCardTutorialStep == CardTutorialOverallStep.frontTerm ||
-            _currentCardTutorialStep == CardTutorialOverallStep.frontGeneration)) {
+        (_currentCardTutorialStep == CardTutorialOverallStep.frontTerm)) {
       return;
     }
 
     _isFlipping = true;
 
-    // The sound for advancing frontTapToFlip is handled by CardFront's overlay tap.
-    // So, no specific tutorial advancement sound here in _handleFlip for that.
-
-    // If backNextButton tutorial is active and card flips back to front, mark as seen.
-    // This is an implicit advancement; the explicit one (with sound) is tapping the overlay/button.
     if (!_isFront && _currentCardTutorialStep == CardTutorialOverallStep.backNextButton) {
       await setHasSeenCardBackNextButtonTutorial(true);
     }
 
     _flipCardController.flipcard();
-    _playFlipSound(); // Play flip sound regardless of tutorial state
+    _playFlipSound();
 
     final bool newIsFront = !_isFront;
     CardTutorialOverallStep nextTutorialStepAfterFlip = CardTutorialOverallStep.none;
@@ -334,8 +307,6 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
     if (newIsFront) {
       if (!await getHasSeenCardFrontTermTutorial()) {
         nextTutorialStepAfterFlip = CardTutorialOverallStep.frontTerm;
-      } else if (!await getHasSeenCardFrontGenerationTutorial()) {
-        nextTutorialStepAfterFlip = CardTutorialOverallStep.frontGeneration;
       } else if (!await getHasSeenCardFrontTapToFlipTutorial()) {
         nextTutorialStepAfterFlip = CardTutorialOverallStep.frontTapToFlip;
       }
@@ -427,7 +398,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
 
     return Positioned.fill(
       child: GestureDetector(
-        onTap: () async { // MODIFIED
+        onTap: () async {
           await _playTutorialAdvanceSound();
           _advanceBackCardTutorial();
         },
@@ -529,12 +500,11 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
           padding: EdgeInsets.zero,
           alignment: Alignment.center,
         ),
-        onPressed: () async { // MODIFIED
+        onPressed: () async {
           if (_isFlipping) return;
           if (!_isFront && _currentCardTutorialStep == CardTutorialOverallStep.backNextButton) {
             await _playTutorialAdvanceSound();
             _advanceBackCardTutorial();
-            // Optionally: widget.onNextButtonPressed(); // If you want to advance card too
           } else if (_currentCardTutorialStep == CardTutorialOverallStep.none && !_isFront) {
             await _playStandardClickSound();
             widget.onNextButtonPressed();
@@ -562,7 +532,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
             padding: EdgeInsets.zero,
             alignment: Alignment.center,
           ),
-          onPressed: () async { // MODIFIED
+          onPressed: () async {
             if (_isFlipping) return;
             if (!_isFlipping) {
               await _playStandardClickSound();
@@ -581,14 +551,13 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
     if (_isFront) {
       switch(_currentCardTutorialStep) {
         case CardTutorialOverallStep.frontTerm: initialFrontStepForCardFront = CardFrontTutorialStep.term; break;
-        case CardTutorialOverallStep.frontGeneration: initialFrontStepForCardFront = CardFrontTutorialStep.generationIcon; break;
         case CardTutorialOverallStep.frontTapToFlip: initialFrontStepForCardFront = CardFrontTutorialStep.tapToFlip; break;
         default: break;
       }
     }
 
     return GestureDetector(
-      onTap: _handleFlip, // Sound for frontTapToFlip is handled inside CardFront
+      onTap: _handleFlip,
       child: Stack(
         key: _flipCardStackKey,
         alignment: Alignment.center,
@@ -608,7 +577,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
                   term: widget.term,
                   initialTutorialStep: initialFrontStepForCardFront,
                   onTutorialStepChange: _handleCardFrontTutorialStepChange,
-                  onHistoryIconPressed: widget.onHistoryIconPressed, // Pass down callback
+                  // onHistoryIconPressed: widget.onHistoryIconPressed, // REMOVED
                 ),
               ),
               backWidget: SizedBox(
@@ -622,7 +591,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
                   previousButton: backCardPreviousButton,
                   nextButtonKey: _nextButtonKeyOnBackCard,
                   previousButtonKey: _previousButtonKeyOnBackCard,
-                  onHistoryIconPressed: widget.onHistoryIconPressed, // Pass down callback
+                  // onHistoryIconPressed: widget.onHistoryIconPressed, // REMOVED
                 ),
               ),
             ),

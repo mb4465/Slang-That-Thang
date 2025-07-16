@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:math'; // For min()
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:audioplayers/audioplayers.dart'; // ADDED
+import 'package:audioplayers/audioplayers.dart';
 import '../data/globals.dart';
 import 'tutorial_cutout_clipper.dart';
 
@@ -22,7 +22,6 @@ class ClampedAnimationDecorator extends Animation<double> {
 enum CardFrontTutorialStep {
   none,
   term,
-  generationIcon,
   tapToFlip,
 }
 
@@ -30,14 +29,12 @@ class CardFront extends StatefulWidget {
   final String term;
   final Function(CardFrontTutorialStep step) onTutorialStepChange;
   final CardFrontTutorialStep initialTutorialStep;
-  final VoidCallback? onHistoryIconPressed; // New callback
 
   const CardFront({
     super.key,
     required this.term,
     required this.onTutorialStepChange,
     required this.initialTutorialStep,
-    this.onHistoryIconPressed, // New callback
   });
 
   @override
@@ -45,7 +42,7 @@ class CardFront extends StatefulWidget {
 }
 
 class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
-  bool _showGenerationsOverlay = false;
+  // REMOVED: bool _showGenerationsOverlay = false;
 
   CardFrontTutorialStep _currentTutorialStep = CardFrontTutorialStep.none;
   AnimationController? _tutorialAnimationController;
@@ -58,16 +55,12 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
   Animation<double>? _handScaleAnimation;
 
   final GlobalKey _termKey = GlobalKey();
-  final GlobalKey _generationIconKey = GlobalKey();
   final GlobalKey _cardFrontStackKey = GlobalKey();
 
-  // --- ADDED: AudioPlayer instance ---
   final AudioPlayer _audioPlayer = AudioPlayer();
-  // --- END ADDITION ---
 
   final Map<CardFrontTutorialStep, String> _tutorialTexts = {
     CardFrontTutorialStep.term: "This is the slang word you need to define and use in a sentence.",
-    CardFrontTutorialStep.generationIcon: "View the list of generations and their timeframes.",
     CardFrontTutorialStep.tapToFlip: "Tap on the screen to flip the card and see the slang word meaning.",
   };
 
@@ -182,15 +175,6 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
       player.onPlayerComplete.first.then((_) => player.dispose());
     }
   }
-  
-  Future<void> _playHistoryButtonSound() async {
-    if (await getSoundEnabled()) {
-      final player = AudioPlayer();
-      // Changed to click.mp3 as ui_tap.mp3 was causing issues
-      await player.play(AssetSource('audio/click.mp3')); 
-      player.onPlayerComplete.first.then((_) => player.dispose());
-    }
-  }
 
   void _advanceTutorialStep() async {
     if (!mounted) return;
@@ -202,14 +186,6 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
     switch (_currentTutorialStep) {
       case CardFrontTutorialStep.term:
         await setHasSeenCardFrontTermTutorial(true);
-        if (!await getHasSeenCardFrontGenerationTutorial()) {
-          nextStep = CardFrontTutorialStep.generationIcon;
-        } else if (!await getHasSeenCardFrontTapToFlipTutorial()) {
-          nextStep = CardFrontTutorialStep.tapToFlip;
-        }
-        break;
-      case CardFrontTutorialStep.generationIcon:
-        await setHasSeenCardFrontGenerationTutorial(true);
         if (!await getHasSeenCardFrontTapToFlipTutorial()) {
           nextStep = CardFrontTutorialStep.tapToFlip;
         }
@@ -254,59 +230,7 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Widget _buildGenerationsOverlay(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final overlayWidth = screenWidth * 0.85;
-    final overlayMaxHeight = screenHeight * 0.7;
-    return Center(
-      child: Material(
-        elevation: 8.0,
-        borderRadius: BorderRadius.circular(16.0),
-        color: Colors.transparent,
-        child: Container(
-          width: overlayWidth,
-          constraints: BoxConstraints(maxHeight: overlayMaxHeight, minWidth: 280),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16.0),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: IconButton(
-                    icon: Icon(Icons.close, color: Colors.black54),
-                    tooltip: 'Close',
-                    onPressed: () async {
-                      if (_currentTutorialStep == CardFrontTutorialStep.generationIcon) {
-                        _advanceTutorialStep();
-                      } else {
-                        await _playStandardClickSound();
-                      }
-                      if (mounted) {
-                        setState(() { _showGenerationsOverlay = false; });
-                      }
-                    },
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
-                  child: SvgPicture.asset('assets/images/generations-without-icon.svg', fit: BoxFit.contain),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // REMOVED: _buildGenerationsOverlay method
 
   Widget _buildCardFrontTutorialOverlayWidget() {
     if (_tutorialAnimationController == null ||
@@ -315,37 +239,31 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
         _currentTutorialStep == CardFrontTutorialStep.none) {
       return const SizedBox.shrink();
     }
-    GlobalKey? currentTargetKey;
-    bool isHighlightCircular = false;
-    double highlightPadding = 0;
-    switch (_currentTutorialStep) {
-      case CardFrontTutorialStep.term:
-        currentTargetKey = _termKey;
-        highlightPadding = 10.0 * (MediaQuery.of(context).size.width / 400);
-        break;
-      case CardFrontTutorialStep.generationIcon:
-        currentTargetKey = _generationIconKey;
-        isHighlightCircular = true;
-        highlightPadding = 8.0 * (MediaQuery.of(context).size.width / 400);
-        break;
-      case CardFrontTutorialStep.tapToFlip:
-        if (_handAnimationController == null || _handPositionAnimation == null || _handScaleAnimation == null) {
-          return const SizedBox.shrink();
-        }
-        return _buildTapToFlipOverlay();
-      default:
+
+    if (_currentTutorialStep == CardFrontTutorialStep.tapToFlip) {
+      if (_handAnimationController == null || _handPositionAnimation == null || _handScaleAnimation == null) {
         return const SizedBox.shrink();
+      }
+      return _buildTapToFlipOverlay();
     }
+
+    GlobalKey? currentTargetKey = _termKey;
+    bool isHighlightCircular = false;
+    double highlightPadding = 10.0 * (MediaQuery.of(context).size.width / 400);
+
     if (currentTargetKey.currentContext == null || _cardFrontStackKey.currentContext == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() {}); });
       return Positioned.fill(child: Container(color: Colors.black.withOpacity(0.7), child: Center(child: Text("Initializing hint...", style: TextStyle(color: Colors.white, decoration: TextDecoration.none, fontSize: 14)))));
     }
+
     final RenderBox? targetRenderBox = currentTargetKey.currentContext!.findRenderObject() as RenderBox?;
     final RenderBox? ancestorRenderBox = _cardFrontStackKey.currentContext!.findRenderObject() as RenderBox?;
+
     if (targetRenderBox == null || !targetRenderBox.attached || ancestorRenderBox == null || !ancestorRenderBox.attached) {
       WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() {}); });
       return Positioned.fill(child: Container(color: Colors.black.withOpacity(0.7), child: Center(child: Text("Waiting for element...", style: TextStyle(color: Colors.white, decoration: TextDecoration.none, fontSize: 14)))));
     }
+
     final Offset targetPositionInStack = targetRenderBox.localToGlobal(Offset.zero, ancestor: ancestorRenderBox);
     final Size targetSize = targetRenderBox.size;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -358,14 +276,9 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
     final double hintPaddingVertical = 8 * scaleFactor;
     final double hintTextContainerBorderWidth = 1.0 * scaleFactor;
     final double hintContainerCornerRadius = 8.0 * scaleFactor;
-    bool pointUpwards;
-    if (_currentTutorialStep == CardFrontTutorialStep.term) {
-      pointUpwards = targetCenter.dy > screenHeight * 0.6;
-    } else if (_currentTutorialStep == CardFrontTutorialStep.generationIcon) {
-      pointUpwards = false; 
-    } else { 
-      pointUpwards = targetCenter.dy > screenHeight * 0.6;
-    }
+
+    bool pointUpwards = targetCenter.dy > screenHeight * 0.6;
+
     double estimatedTextHeight = (_tutorialTexts[_currentTutorialStep] ?? "").length > 40 ? hintTextFontSize * 3.0 : hintTextFontSize * 1.8;
     double estimatedHintBlockHeight = estimatedTextHeight + (hintPaddingVertical * 2) + (hintTextContainerBorderWidth*2);
     double verticalOffsetSpacing = 15 * scaleFactor;
@@ -374,77 +287,41 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
         : targetCenter.dy + (targetSize.height/2) + verticalOffsetSpacing;
     double hintBlockLeftPosition = 20 * scaleFactor;
     double? hintBlockRightPosition = 20 * scaleFactor;
-    double? textWidthConstraint; 
-    if (_currentTutorialStep == CardFrontTutorialStep.generationIcon) {
-      textWidthConstraint = screenWidth * 0.55; 
-      final tempTextPainter = TextPainter(
-          text: TextSpan(text: _tutorialTexts[_currentTutorialStep], style: TextStyle(fontSize: hintTextFontSize)),
-          textDirection: TextDirection.ltr)..layout(maxWidth: textWidthConstraint - hintPaddingHorizontal *2);
-      double estimatedTextContentWidth = tempTextPainter.width;
-      double estimatedContainerWidth = estimatedTextContentWidth + hintPaddingHorizontal * 2 + hintTextContainerBorderWidth *2;
 
-      hintBlockLeftPosition = max(20 * scaleFactor, targetCenter.dx - (targetRenderBox.size.width/2) - estimatedContainerWidth - (15 * scaleFactor));
-      hintBlockRightPosition = null; 
-      initialHintBlockTopPosition = targetCenter.dy - estimatedHintBlockHeight / 2;
-    }
     final double topSafeArea = MediaQuery.of(context).padding.top + (10 * scaleFactor);
     final double bottomSafeArea = screenHeight - MediaQuery.of(context).padding.bottom - (10 * scaleFactor);
+
     return Positioned.fill(
       child: GestureDetector(
-        onTap: _advanceTutorialStep, 
+        onTap: _advanceTutorialStep,
         child: AnimatedBuilder(
           animation: Listenable.merge([_tutorialAnimationController!, _tutorialPointerOffset!, _tutorialCircleScale!, _tutorialCircleOpacity!, _tutorialTextOpacity!]),
           builder: (context, child) {
             final double currentAnimatedScale = _tutorialCircleScale!.value;
             double animatedHighlightWidth = (targetSize.width + highlightPadding * 2) * currentAnimatedScale;
             double animatedHighlightHeight = (targetSize.height + highlightPadding * 2) * currentAnimatedScale;
-            if (isHighlightCircular) {
-              animatedHighlightWidth = (max(targetSize.width, targetSize.height) + highlightPadding * 2) * currentAnimatedScale;
-              animatedHighlightHeight = animatedHighlightWidth;
-            }
-            final BorderRadius animatedHighlightBorderRadius = isHighlightCircular
-                ? BorderRadius.circular(animatedHighlightWidth / 2)
-                : BorderRadius.circular(8.0 * currentAnimatedScale * scaleFactor);
+            final BorderRadius animatedHighlightBorderRadius = BorderRadius.circular(8.0 * currentAnimatedScale * scaleFactor);
             final Rect cutoutRect = Rect.fromCenter(center: targetCenter, width: animatedHighlightWidth, height: animatedHighlightHeight);
             double currentHintBlockTopPosition = initialHintBlockTopPosition;
-            if (_currentTutorialStep != CardFrontTutorialStep.generationIcon) {
-              currentHintBlockTopPosition += _tutorialPointerOffset!.value.dy;
-            }
+            currentHintBlockTopPosition += _tutorialPointerOffset!.value.dy;
+
             if (currentHintBlockTopPosition < topSafeArea) {
               currentHintBlockTopPosition = topSafeArea;
             } else if (currentHintBlockTopPosition + estimatedHintBlockHeight > bottomSafeArea) {
-              if (_currentTutorialStep == CardFrontTutorialStep.generationIcon) {
+              double alternativeTopPosition = !pointUpwards
+                  ? targetCenter.dy - (targetSize.height/2) - estimatedHintBlockHeight - verticalOffsetSpacing
+                  : targetCenter.dy + (targetSize.height/2) + verticalOffsetSpacing;
+              alternativeTopPosition += _tutorialPointerOffset!.value.dy;
+              if (alternativeTopPosition >= topSafeArea && (alternativeTopPosition + estimatedHintBlockHeight <= bottomSafeArea)) {
+                currentHintBlockTopPosition = alternativeTopPosition;
+              } else {
                 currentHintBlockTopPosition = bottomSafeArea - estimatedHintBlockHeight;
                 if (currentHintBlockTopPosition < topSafeArea) currentHintBlockTopPosition = topSafeArea;
-              } else {
-                double alternativeTopPosition = !pointUpwards
-                    ? targetCenter.dy - (targetSize.height/2) - estimatedHintBlockHeight - verticalOffsetSpacing
-                    : targetCenter.dy + (targetSize.height/2) + verticalOffsetSpacing;
-                if (_currentTutorialStep != CardFrontTutorialStep.generationIcon) {
-                  alternativeTopPosition += _tutorialPointerOffset!.value.dy;
-                }
-                if (alternativeTopPosition >= topSafeArea && (alternativeTopPosition + estimatedHintBlockHeight <= bottomSafeArea)) {
-                  currentHintBlockTopPosition = alternativeTopPosition;
-                } else {
-                  currentHintBlockTopPosition = bottomSafeArea - estimatedHintBlockHeight;
-                  if (currentHintBlockTopPosition < topSafeArea) currentHintBlockTopPosition = topSafeArea;
-                }
               }
             }
+
             double currentHintBlockLeft = hintBlockLeftPosition;
             double? currentHintBlockRight = hintBlockRightPosition;
-
-            if (_currentTutorialStep == CardFrontTutorialStep.generationIcon && textWidthConstraint != null) {
-              final tempTextPainter = TextPainter(
-                  text: TextSpan(text: _tutorialTexts[_currentTutorialStep], style: TextStyle(fontSize: hintTextFontSize)),
-                  textDirection: TextDirection.ltr)..layout(maxWidth: textWidthConstraint - hintPaddingHorizontal * 2);
-              double actualTextContentWidth = tempTextPainter.width;
-              double actualContainerWidth = actualTextContentWidth + hintPaddingHorizontal * 2 + hintTextContainerBorderWidth * 2;
-              currentHintBlockLeft = max(20 * scaleFactor, targetCenter.dx - (targetRenderBox.size.width/2) - actualContainerWidth - (15 * scaleFactor));
-              if (currentHintBlockLeft < (20 * scaleFactor)) {
-                currentHintBlockLeft = (20*scaleFactor);
-              }
-            }
 
             return Stack(
               children: [
@@ -454,15 +331,12 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
                 ),
                 Positioned(
                   left: cutoutRect.left, top: cutoutRect.top,
-                  child: Opacity(
-                    opacity: _tutorialCircleOpacity!.value,
-                    child: Container(
-                      width: cutoutRect.width, height: cutoutRect.height,
-                      decoration: BoxDecoration(
-                        shape: isHighlightCircular ? BoxShape.circle : BoxShape.rectangle,
-                        borderRadius: isHighlightCircular ? null : animatedHighlightBorderRadius,
-                        border: Border.all(color: Colors.white.withOpacity(0.8), width: spotlightBorderWidth),
-                      ),
+                  child: Container(
+                    width: cutoutRect.width, height: cutoutRect.height,
+                    decoration: BoxDecoration(
+                      shape: isHighlightCircular ? BoxShape.circle : BoxShape.rectangle,
+                      borderRadius: isHighlightCircular ? null : animatedHighlightBorderRadius,
+                      border: Border.all(color: Colors.white.withOpacity(0.8 * _tutorialCircleOpacity!.value), width: spotlightBorderWidth),
                     ),
                   ),
                 ),
@@ -470,7 +344,6 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
                   left: currentHintBlockLeft,
                   right: currentHintBlockRight,
                   top: currentHintBlockTopPosition,
-                  width: (_currentTutorialStep == CardFrontTutorialStep.generationIcon && textWidthConstraint != null) ? textWidthConstraint : null,
                   child: Opacity(
                     opacity: _tutorialTextOpacity!.value,
                     child: Container(
@@ -508,7 +381,7 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
     final double handIconSize = 60 * scaleFactor;
     return Positioned.fill(
       child: GestureDetector(
-        onTap: _advanceTutorialStep, 
+        onTap: _advanceTutorialStep,
         child: Container(
           color: Colors.black.withOpacity(0.75),
           child: AnimatedBuilder(
@@ -567,10 +440,6 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final statusBarHeight = MediaQuery.of(context).padding.top;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final double generationLogoSize = screenWidth * 0.085;
-    final double historyIconSize = screenWidth * 0.075; // Slightly smaller than generation icon
     bool isTutorialActive = _currentTutorialStep != CardFrontTutorialStep.none;
 
     return Scaffold(
@@ -609,44 +478,8 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
               ),
             ),
           ),
-          Positioned(
-            top: statusBarHeight + 16.0,
-            right: 16.0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                InkWell(
-                  key: _generationIconKey, // Keep key on the InkWell for tutorial
-                  onTap: () async {
-                    if (isTutorialActive && _currentTutorialStep == CardFrontTutorialStep.generationIcon) {
-                      _advanceTutorialStep(); 
-                    } else if (!isTutorialActive || _currentTutorialStep != CardFrontTutorialStep.generationIcon) {
-                      await _playStandardClickSound();
-                      if(mounted) setState(() { _showGenerationsOverlay = true; });
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(generationLogoSize / 2),
-                  child: SvgPicture.asset(
-                    'assets/images/generation-icon.svg',
-                    height: generationLogoSize,
-                    width: generationLogoSize,
-                  ),
-                ),
-                const SizedBox(height: 8.0), // Spacing between icons
-                IconButton(
-                  icon: Icon(Icons.history, color: Colors.black, size: historyIconSize),
-                  tooltip: 'View Card History',
-                  onPressed: () async {
-                    await _playHistoryButtonSound(); // Play sound
-                    widget.onHistoryIconPressed?.call();
-                  },
-                ),
-              ],
-            ),
-          ),
-          // Removed the old Positioned History Icon Button as it's now in the Column
-          if (_showGenerationsOverlay) _buildGenerationsOverlay(context),
+          // REMOVED: Positioned with generation-icon and history icon
+          // REMOVED: if (_showGenerationsOverlay) _buildGenerationsOverlay(context),
           if (isTutorialActive) _buildCardFrontTutorialOverlayWidget(),
         ],
       ),
