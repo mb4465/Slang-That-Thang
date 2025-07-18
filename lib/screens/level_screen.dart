@@ -389,13 +389,17 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
     );
   }
 
+  // =========================================================================
+  // ===== BUILD METHOD: MODIFICATIONS ARE HERE ==============================
+  // =========================================================================
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    final iconSize = screenHeight * 0.04; // Size for Home icon
-    final generationIconSize = screenWidth * 0.085; // Size for Generation icon
-    final historyIconSize = screenWidth * 0.075; // Size for History icon
+
+    // --- MODIFICATION 1: Define a single, unified size for all icons. ---
+    // This is the key change to make all icons scale identically.
+    final double unifiedIconSize = min(screenWidth, screenHeight) * 0.085;
     final padding = screenWidth * 0.05;
 
     Widget currentCard = FlipCardWidget(
@@ -421,53 +425,59 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
             left: padding,
             right: padding,
             child: SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              // --- MODIFICATION 2: Reverted to the original layout structure ---
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  // --- Home Icon (Left) ---
+                  IconButton(
+                    icon: Icon(
+                      Icons.home,
+                      color: isCardFront ? Colors.black : Colors.white,
+                      // --- MODIFICATION 3: Apply the unified size ---
+                      size: unifiedIconSize,
+                    ),
+                    onPressed: () {
+                      _playAudio('audio/rules.mp3');
+                      Navigator.pop(context);
+                    },
+                  ),
+
+                  // --- Column for Right-Side Icons ---
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.home,
-                          color: isCardFront ? Colors.black : Colors.white,
-                          size: iconSize,
-                        ),
-                        onPressed: () {
-                          _playAudio('audio/rules.mp3');
-                          Navigator.pop(context);
-                        },
-                      ),
+                      // --- Generation Icon (Top-Right) ---
                       InkWell(
                         onTap: () async {
                           await _playAudio('audio/click.mp3');
                           if(mounted) setState(() { _showGenerationsOverlay = true; });
                         },
-                        borderRadius: BorderRadius.circular(generationIconSize / 2),
+                        borderRadius: BorderRadius.circular(unifiedIconSize / 2),
                         child: SvgPicture.asset(
                           'assets/images/generation-icon.svg',
-                          height: generationIconSize,
-                          width: generationIconSize,
-                          // ADDED: ColorFilter to change color based on card side
+                          // --- MODIFICATION 3: Apply the unified size ---
+                          height: unifiedIconSize,
+                          width: unifiedIconSize,
                           colorFilter: ColorFilter.mode(
                             isCardFront ? Colors.black : Colors.white,
                             BlendMode.srcIn,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8.0),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: IconButton(
-                      icon: Icon(Icons.history,
-                        color: isCardFront ? Colors.black : Colors.white,
-                        size: historyIconSize,
+                      const SizedBox(height: 8.0), // Spacing between the two right icons
+                      // --- History Icon (Below Generation Icon) ---
+                      IconButton(
+                        icon: Icon(Icons.history,
+                          color: isCardFront ? Colors.black : Colors.white,
+                          // --- MODIFICATION 3: Apply the unified size ---
+                          size: unifiedIconSize,
+                        ),
+                        tooltip: 'View Card History',
+                        onPressed: _toggleHistoryOverlay,
                       ),
-                      tooltip: 'View Card History',
-                      onPressed: _toggleHistoryOverlay,
-                    ),
+                    ],
                   ),
                 ],
               ),
