@@ -1,30 +1,30 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../data/globals.dart';
+import '../data/globals.dart'; // Ensure this path is correct
 
 class CardBack extends StatefulWidget {
   final String term;
   final String definition;
   final String generation;
-  final Image image;
+  final String imagePath; // CHANGED: Now takes the image path string
   final Widget nextButton;
   final Widget? previousButton;
   final GlobalKey? nextButtonKey;
   final GlobalKey? previousButtonKey;
-  // final VoidCallback? onHistoryIconPressed; // REMOVED: History icon moved to LevelScreen
+  final double iconSize; // NEW: Add iconSize parameter
 
   const CardBack({
     super.key,
     required this.term,
     required this.definition,
-    required this.image,
+    required this.imagePath, // CHANGED: From image to imagePath
     required this.generation,
     required this.nextButton,
     this.previousButton,
     this.nextButtonKey,
     this.previousButtonKey,
-    // this.onHistoryIconPressed, // REMOVED
+    required this.iconSize, // NEW: Require iconSize
   });
 
   @override
@@ -32,7 +32,6 @@ class CardBack extends StatefulWidget {
 }
 
 class _CardBackState extends State<CardBack> {
-  // bool _showGenerationsOverlay = false; // REMOVED
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
@@ -49,14 +48,6 @@ class _CardBackState extends State<CardBack> {
     }
   }
 
-  // Future<void> _playHistoryButtonSound() async { // REMOVED: No longer needed here
-  //   if (await getSoundEnabled()) {
-  //     final player = AudioPlayer();
-  //     await player.play(AssetSource('audio/click.mp3'));
-  //     player.onPlayerComplete.first.then((_) => player.dispose());
-  //   }
-  // }
-
   String addNewlineBeforeBracket(String input) {
     final bracketIndex = input.indexOf('(');
     return bracketIndex != -1
@@ -64,19 +55,12 @@ class _CardBackState extends State<CardBack> {
         : input;
   }
 
-  // Widget _buildGenerationsOverlayWidget(BuildContext context) { // REMOVED: Moved to LevelScreen
-  //   // ... (widget content)
-  // }
-
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
         final screenHeight = constraints.maxHeight;
-        final statusBarHeight = MediaQuery.of(context).padding.top;
-        // final double generationLogoSize = screenWidth * 0.085; // REMOVED
-        final double historyIconSize = screenWidth * 0.075; // Still used for placeholder/size consistency if needed
 
         final double termFontSize = screenWidth * 0.08;
         final double definitionFontSize = screenWidth * 0.055;
@@ -98,12 +82,13 @@ class _CardBackState extends State<CardBack> {
                 child: Padding(
                   padding: EdgeInsets.only(top: topImagePadding),
                   child: SizedBox(
-                    key: ValueKey('card-back-image-${widget.image.hashCode}'),
-                    width: screenWidth * 0.09,
-                    height: screenHeight * 0.095,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: widget.image,
+                    // UPDATED: Use widget.iconSize for width and height
+                    width: widget.iconSize,
+                    height: widget.iconSize,
+                    child: Image.asset(
+                      widget.imagePath, // Use the new imagePath
+                      key: ValueKey('card-back-image-${widget.imagePath}'), // Use path for key
+                      fit: BoxFit.contain, // Ensures the image scales within the box without clipping
                     ),
                   ),
                 ),
@@ -204,8 +189,6 @@ class _CardBackState extends State<CardBack> {
                   ),
                 ),
               ),
-              // REMOVED: Positioned History Icon Button
-              // if (_showGenerationsOverlay) _buildGenerationsOverlayWidget(context), // REMOVED
             ],
           ),
         );

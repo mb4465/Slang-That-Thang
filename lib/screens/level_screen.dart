@@ -4,8 +4,8 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:test2/data/terms_data.dart';
-import 'package:test2/data/globals.dart';
+import 'package:test2/data/terms_data.dart'; // Ensure this file exists and contains termsData
+import 'package:test2/data/globals.dart'; // Make sure this path is correct
 import 'package:test2/widgets/flip_card_widget.dart';
 
 // Helper class for card history
@@ -42,7 +42,7 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
   late String _selectedGeneration = '';
   late String _selectedTerm = '';
   late String _selectedDefinition = '';
-  late String _selectedIcon = '';
+  late String _selectedIcon = ''; // This will hold the image path
 
   final List<CardHistoryItem> _cardHistory = [];
   final List<CardHistoryItem> _displayedCardsLog = [];
@@ -94,7 +94,7 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
     final termEntry = termList[_random.nextInt(termList.length)];
     _selectedTerm = termEntry['term']!;
     _selectedDefinition = termEntry['definition']!;
-    _selectedIcon = generationIcons[_selectedGeneration] ?? '';
+    _selectedIcon = generationIcons[_selectedGeneration] ?? 'assets/images/default_icon.png'; // Use a default icon path
 
     _displayedCardsLog.add(CardHistoryItem(
       term: _selectedTerm,
@@ -148,7 +148,7 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
       _selectedGeneration = newSelectedGeneration;
       _selectedTerm = termEntry['term']!;
       _selectedDefinition = termEntry['definition']!;
-      _selectedIcon = generationIcons[newSelectedGeneration] ?? '';
+      _selectedIcon = generationIcons[newSelectedGeneration] ?? 'assets/images/default_icon.png';
 
       _displayedCardsLog.add(CardHistoryItem(
         term: _selectedTerm,
@@ -327,7 +327,6 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
     );
   }
 
-
   Widget _buildAnimatedCard(Widget cardContent) {
     return AnimatedBuilder(
       animation: _cardAnimationController,
@@ -389,16 +388,12 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
     );
   }
 
-  // =========================================================================
-  // ===== BUILD METHOD: MODIFICATIONS ARE HERE ==============================
-  // =========================================================================
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // --- MODIFICATION 1: Define a single, unified size for all icons. ---
-    // This is the key change to make all icons scale identically.
+    // Define a single, unified size for all icons.
     final double unifiedIconSize = min(screenWidth, screenHeight) * 0.085;
     final padding = screenWidth * 0.05;
 
@@ -406,13 +401,16 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
       key: ValueKey(_selectedTerm + _selectedGeneration),
       onNextButtonPressed: _goToNextCard,
       onPreviousButtonPressed: _cardHistory.isNotEmpty ? _goToPreviousCard : null,
-      image: Image.asset(_selectedIcon.isNotEmpty ? _selectedIcon : 'assets/images/default_icon.png'),
+      // Pass the image path string directly
+      imagePath: _selectedIcon,
       term: _selectedTerm,
       definition: _selectedDefinition,
       generation: _selectedGeneration,
       onFlip: (isFront) {
         setState(() => isCardFront = isFront);
       },
+      // Pass the unified icon size
+      iconSize: unifiedIconSize,
     );
 
     return Scaffold(
@@ -425,7 +423,6 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
             left: padding,
             right: padding,
             child: SafeArea(
-              // --- MODIFICATION 2: Reverted to the original layout structure ---
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,7 +432,6 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
                     icon: Icon(
                       Icons.home,
                       color: isCardFront ? Colors.black : Colors.white,
-                      // --- MODIFICATION 3: Apply the unified size ---
                       size: unifiedIconSize,
                     ),
                     onPressed: () {
@@ -457,7 +453,6 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
                         borderRadius: BorderRadius.circular(unifiedIconSize / 2),
                         child: SvgPicture.asset(
                           'assets/images/generation-icon.svg',
-                          // --- MODIFICATION 3: Apply the unified size ---
                           height: unifiedIconSize,
                           width: unifiedIconSize,
                           colorFilter: ColorFilter.mode(
@@ -471,7 +466,6 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
                       IconButton(
                         icon: Icon(Icons.history,
                           color: isCardFront ? Colors.black : Colors.white,
-                          // --- MODIFICATION 3: Apply the unified size ---
                           size: unifiedIconSize,
                         ),
                         tooltip: 'View Card History',

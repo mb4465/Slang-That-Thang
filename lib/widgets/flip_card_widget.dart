@@ -1,14 +1,14 @@
+// lib/widgets/flip_card_widget.dart
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:test2/widgets/tutorial_cutout_clipper.dart';
-
+import 'package:test2/widgets/tutorial_cutout_clipper.dart'; // Ensure this file exists
 
 import '../data/globals.dart';
 import 'card_back.dart';
-import 'card_front.dart';
+import 'card_front.dart'; // This import now provides CardFrontTutorialStep
 
 enum CardTutorialOverallStep {
   none,
@@ -17,27 +17,31 @@ enum CardTutorialOverallStep {
   backNextButton,
 }
 
+// CardFrontTutorialStep should ONLY be defined in card_front.dart.
+// Make sure it is NOT defined in this file.
+// If you previously added a placeholder enum here, REMOVE IT.
+
 class FlipCardWidget extends StatefulWidget {
   const FlipCardWidget({
     super.key,
     required this.term,
     required this.definition,
-    required this.image,
+    required this.imagePath,
     required this.generation,
     required this.onNextButtonPressed,
     this.onPreviousButtonPressed,
     this.onFlip,
-    // this.onHistoryIconPressed, // REMOVED: History icon moved to LevelScreen
+    required this.iconSize,
   });
 
   final VoidCallback onNextButtonPressed;
   final VoidCallback? onPreviousButtonPressed;
-  // final VoidCallback? onHistoryIconPressed; // REMOVED
-  final Image image;
+  final String imagePath;
   final String generation;
   final String term;
   final String definition;
   final Function(bool isFront)? onFlip;
+  final double iconSize;
 
   @override
   FlipCardWidgetState createState() => FlipCardWidgetState();
@@ -220,6 +224,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
     } else {
       switch (frontStep) {
         case CardFrontTutorialStep.term: nextOverallStep = CardTutorialOverallStep.frontTerm; break;
+      // CORRECTED LINE: This was the source of the 'tapToFlip' error
         case CardFrontTutorialStep.tapToFlip: nextOverallStep = CardTutorialOverallStep.frontTapToFlip; break;
         case CardFrontTutorialStep.none: break;
       }
@@ -547,6 +552,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
       );
     }
 
+    // The 'CardFrontTutorialStep' enum here is correctly imported from card_front.dart
     CardFrontTutorialStep initialFrontStepForCardFront = CardFrontTutorialStep.none;
     if (_isFront) {
       switch(_currentCardTutorialStep) {
@@ -577,13 +583,12 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
                   term: widget.term,
                   initialTutorialStep: initialFrontStepForCardFront,
                   onTutorialStepChange: _handleCardFrontTutorialStepChange,
-                  // onHistoryIconPressed: widget.onHistoryIconPressed, // REMOVED
                 ),
               ),
               backWidget: SizedBox(
                 width: screenWidth, height: screenHeight,
                 child: CardBack(
-                  image: widget.image,
+                  imagePath: widget.imagePath,
                   term: widget.term,
                   definition: widget.definition,
                   generation: widget.generation,
@@ -591,7 +596,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
                   previousButton: backCardPreviousButton,
                   nextButtonKey: _nextButtonKeyOnBackCard,
                   previousButtonKey: _previousButtonKeyOnBackCard,
-                  // onHistoryIconPressed: widget.onHistoryIconPressed, // REMOVED
+                  iconSize: widget.iconSize,
                 ),
               ),
             ),
