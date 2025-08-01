@@ -7,24 +7,26 @@ class CardBack extends StatefulWidget {
   final String term;
   final String definition;
   final String generation;
-  final String imagePath; // CHANGED: Now takes the image path string
+  final String imagePath;
   final Widget nextButton;
   final Widget? previousButton;
   final GlobalKey? nextButtonKey;
   final GlobalKey? previousButtonKey;
-  final double iconSize; // NEW: Add iconSize parameter
+  final double iconSize;
+  final double topImageYOffset; // NEW: Add topImageYOffset parameter
 
   const CardBack({
     super.key,
     required this.term,
     required this.definition,
-    required this.imagePath, // CHANGED: From image to imagePath
+    required this.imagePath,
     required this.generation,
     required this.nextButton,
     this.previousButton,
     this.nextButtonKey,
     this.previousButtonKey,
-    required this.iconSize, // NEW: Require iconSize
+    required this.iconSize,
+    required this.topImageYOffset, // NEW: Require topImageYOffset
   });
 
   @override
@@ -65,7 +67,6 @@ class _CardBackState extends State<CardBack> {
         final double termFontSize = screenWidth * 0.08;
         final double definitionFontSize = screenWidth * 0.055;
         final double generationFontSize = screenWidth * 0.045;
-        final double topImagePadding = screenHeight * 0.08;
         final double originalBottomButtonPadding = screenHeight * 0.08;
         final double bottomIconPadding = screenHeight * 0.04;
         final double sidePadding = screenWidth * 0.05;
@@ -73,57 +74,65 @@ class _CardBackState extends State<CardBack> {
         final double buttonsUpwardOffset = screenHeight * 0.05;
         final double totalBottomPaddingForButtons = originalBottomButtonPadding + buttonsUpwardOffset;
 
+        // Calculate the space taken by the image and a small buffer below it.
+        // This will be used to push the text content down.
+        final double imageAreaHeight = widget.iconSize + screenHeight * 0.03;
+
+
         return Scaffold(
           backgroundColor: Colors.black,
           body: Stack(
             children: [
-              Align(
-                alignment: Alignment.topCenter,
-                child: Padding(
-                  padding: EdgeInsets.only(top: topImagePadding),
-                  child: SizedBox(
-                    // UPDATED: Use widget.iconSize for width and height
-                    width: widget.iconSize,
-                    height: widget.iconSize,
-                    child: Image.asset(
-                      widget.imagePath, // Use the new imagePath
-                      key: ValueKey('card-back-image-${widget.imagePath}'), // Use path for key
-                      fit: BoxFit.contain, // Ensures the image scales within the box without clipping
-                    ),
+              // Position the image at the exact topYOffset received
+              Positioned(
+                top: widget.topImageYOffset,
+                left: (screenWidth - widget.iconSize) / 2, // Center horizontally
+                child: SizedBox(
+                  width: widget.iconSize,
+                  height: widget.iconSize,
+                  child: Image.asset(
+                    widget.imagePath,
+                    key: ValueKey('card-back-image-${widget.imagePath}'),
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
+              // Main content (term, definition) - adjust its top padding
               Center(
                 child: SingleChildScrollView(
                   padding: EdgeInsets.symmetric(horizontal: sidePadding * 0.75),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 15),
-                        child: Text(
-                          widget.term,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: termFontSize,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                  child: Padding(
+                    // Add top padding dynamically based on image size and desired spacing
+                    padding: EdgeInsets.only(top: imageAreaHeight),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
+                          child: Text(
+                            widget.term,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: termFontSize,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 0),
-                        child: Text(
-                          widget.definition,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: definitionFontSize,
-                            color: Colors.white,
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 0),
+                          child: Text(
+                            widget.definition,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: definitionFontSize,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

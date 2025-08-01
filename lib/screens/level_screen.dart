@@ -397,6 +397,15 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
     final double unifiedIconSize = min(screenWidth, screenHeight) * 0.085;
     final padding = screenWidth * 0.05;
 
+    // Calculate the top offset for the row of fixed icons (Home, Generation, History)
+    // This position accounts for the device's safe area (status bar/notch)
+    // and adds a small percentage of screen height for consistent top padding.
+    final double fixedIconsRowTopYOffset = MediaQuery.of(context).padding.top + screenHeight * 0.02;
+
+    // The card-back image should start at the same vertical position as the fixed icon row.
+    final double cardImageTopYOffset = fixedIconsRowTopYOffset;
+
+
     Widget currentCard = FlipCardWidget(
       key: ValueKey(_selectedTerm + _selectedGeneration),
       onNextButtonPressed: _goToNextCard,
@@ -411,6 +420,8 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
       },
       // Pass the unified icon size
       iconSize: unifiedIconSize,
+      // Pass the calculated Y offset for the card-back image
+      topImageYOffset: cardImageTopYOffset,
     );
 
     return Scaffold(
@@ -419,62 +430,61 @@ class LevelScreenState extends State<LevelScreen> with TickerProviderStateMixin 
         children: [
           _buildAnimatedCard(currentCard),
           Positioned(
-            top: MediaQuery.of(context).padding.top + screenHeight * 0.02,
+            // Use the calculated offset for consistent placement of the fixed icons
+            top: fixedIconsRowTopYOffset,
             left: padding,
             right: padding,
-            child: SafeArea(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // --- Home Icon (Left) ---
-                  IconButton(
-                    icon: Icon(
-                      Icons.home,
-                      color: isCardFront ? Colors.black : Colors.white,
-                      size: unifiedIconSize,
-                    ),
-                    onPressed: () {
-                      _playAudio('audio/rules.mp3');
-                      Navigator.pop(context);
-                    },
+            child: Row( // SafeArea is no longer needed here as fixedIconsRowTopYOffset already accounts for it.
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // --- Home Icon (Left) ---
+                IconButton(
+                  icon: Icon(
+                    Icons.home,
+                    color: isCardFront ? Colors.black : Colors.white,
+                    size: unifiedIconSize,
                   ),
+                  onPressed: () {
+                    _playAudio('audio/rules.mp3');
+                    Navigator.pop(context);
+                  },
+                ),
 
-                  // --- Column for Right-Side Icons ---
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // --- Generation Icon (Top-Right) ---
-                      InkWell(
-                        onTap: () async {
-                          await _playAudio('audio/click.mp3');
-                          if(mounted) setState(() { _showGenerationsOverlay = true; });
-                        },
-                        borderRadius: BorderRadius.circular(unifiedIconSize / 2),
-                        child: SvgPicture.asset(
-                          'assets/images/generation-icon.svg',
-                          height: unifiedIconSize,
-                          width: unifiedIconSize,
-                          colorFilter: ColorFilter.mode(
-                            isCardFront ? Colors.black : Colors.white,
-                            BlendMode.srcIn,
-                          ),
+                // --- Column for Right-Side Icons ---
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // --- Generation Icon (Top-Right) ---
+                    InkWell(
+                      onTap: () async {
+                        await _playAudio('audio/click.mp3');
+                        if(mounted) setState(() { _showGenerationsOverlay = true; });
+                      },
+                      borderRadius: BorderRadius.circular(unifiedIconSize / 2),
+                      child: SvgPicture.asset(
+                        'assets/images/generation-icon.svg',
+                        height: unifiedIconSize,
+                        width: unifiedIconSize,
+                        colorFilter: ColorFilter.mode(
+                          isCardFront ? Colors.black : Colors.white,
+                          BlendMode.srcIn,
                         ),
                       ),
-                      const SizedBox(height: 8.0), // Spacing between the two right icons
-                      // --- History Icon (Below Generation Icon) ---
-                      IconButton(
-                        icon: Icon(Icons.history,
-                          color: isCardFront ? Colors.black : Colors.white,
-                          size: unifiedIconSize,
-                        ),
-                        tooltip: 'View Card History',
-                        onPressed: _toggleHistoryOverlay,
+                    ),
+                    const SizedBox(height: 8.0), // Spacing between the two right icons
+                    // --- History Icon (Below Generation Icon) ---
+                    IconButton(
+                      icon: Icon(Icons.history,
+                        color: isCardFront ? Colors.black : Colors.white,
+                        size: unifiedIconSize,
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                      tooltip: 'View Card History',
+                      onPressed: _toggleHistoryOverlay,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           if (_isHistoryOverlayVisible) _buildHistoryOverlayWidget(),

@@ -17,10 +17,6 @@ enum CardTutorialOverallStep {
   backNextButton,
 }
 
-// CardFrontTutorialStep should ONLY be defined in card_front.dart.
-// Make sure it is NOT defined in this file.
-// If you previously added a placeholder enum here, REMOVE IT.
-
 class FlipCardWidget extends StatefulWidget {
   const FlipCardWidget({
     super.key,
@@ -32,6 +28,7 @@ class FlipCardWidget extends StatefulWidget {
     this.onPreviousButtonPressed,
     this.onFlip,
     required this.iconSize,
+    required this.topImageYOffset, // NEW: Add this parameter
   });
 
   final VoidCallback onNextButtonPressed;
@@ -42,6 +39,7 @@ class FlipCardWidget extends StatefulWidget {
   final String definition;
   final Function(bool isFront)? onFlip;
   final double iconSize;
+  final double topImageYOffset; // NEW: Declare this parameter
 
   @override
   FlipCardWidgetState createState() => FlipCardWidgetState();
@@ -224,7 +222,6 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
     } else {
       switch (frontStep) {
         case CardFrontTutorialStep.term: nextOverallStep = CardTutorialOverallStep.frontTerm; break;
-      // CORRECTED LINE: This was the source of the 'tapToFlip' error
         case CardFrontTutorialStep.tapToFlip: nextOverallStep = CardTutorialOverallStep.frontTapToFlip; break;
         case CardFrontTutorialStep.none: break;
       }
@@ -597,6 +594,7 @@ class FlipCardWidgetState extends State<FlipCardWidget> with TickerProviderState
                   nextButtonKey: _nextButtonKeyOnBackCard,
                   previousButtonKey: _previousButtonKeyOnBackCard,
                   iconSize: widget.iconSize,
+                  topImageYOffset: widget.topImageYOffset, // Pass the new offset
                 ),
               ),
             ),
