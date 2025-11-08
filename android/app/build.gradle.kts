@@ -20,10 +20,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.callidoraglobalmedia.slangthatthang"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -32,9 +29,7 @@ android {
 
     signingConfigs {
         create("release") {
-            // if your path has spaces, use raw string with triple quotes
-//            storeFile  = file("""C:\\Users\\ahmed\\OneDrive\\Desktop\\Slang that Thang\\Upload Key\\UploadKey.jks""")
-            storeFile = file("upload-keystore.jks")
+            storeFile = file("""C:\Users\ahmed\OneDrive\Desktop\Slang that Thang\upload-keystore.jks""")
             storePassword = "slangthatthang"
             keyAlias      = "slangthatthang"
             keyPassword   = "slangthatthang"
@@ -43,24 +38,9 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("release")
         }
     }
-
-//    buildTypes {
-//        release {
-//            // enable code shrinking if you want (optional)
-//            isMinifyEnabled = false
-//            // point to your new signing config:
-//            signingConfig = signingConfigs.getByName("release")
-//        }
-//        // you can also explicitly sign debug if you like:
-//        debug {
-//            // signingConfig = signingConfigs.getByName("release")
-//        }
-//    }
 }
 
 flutter {
