@@ -450,19 +450,21 @@ class _CardFrontState extends State<CardFront> with TickerProviderStateMixin {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 30),
             child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    widget.term,
-                    key: _termKey,
-                    style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width * 0.09,
-                      fontWeight: FontWeight.bold,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      widget.term,
+                      key: _termKey,
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width * 0.09,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

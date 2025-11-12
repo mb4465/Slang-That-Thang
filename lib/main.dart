@@ -1,11 +1,25 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:device_preview/device_preview.dart';
 import 'package:test2/screens/home_screen.dart'; // Make sure this path is correct for your project
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
+  
+  // To enable device preview, uncomment the block below
+  // and comment out the runApp(const MyApp()); line.
+
+  // runApp(
+  //   DevicePreview(
+  //     enabled: !kReleaseMode, // Ensures it's disabled in release mode
+  //     builder: (context) => const MyApp(), // Wrap your app
+  //   ),
+  // );
+
+  
   runApp(const MyApp());
 }
 
@@ -15,6 +29,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // To enable device preview, uncomment these lines.
+      // locale: DevicePreview.locale(context),
+      // builder: DevicePreview.appBuilder,
       title: 'SLANG THAT THANG!!',
       theme: ThemeData(
         primarySwatch: Colors.blue,
