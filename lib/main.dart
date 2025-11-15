@@ -11,14 +11,14 @@ void main() {
   
   // To enable device preview, uncomment the block below
   // and comment out the runApp(const MyApp()); line.
-
-  // runApp(
-  //   DevicePreview(
-  //     enabled: !kReleaseMode, // Ensures it's disabled in release mode
-  //     builder: (context) => const MyApp(), // Wrap your app
-  //   ),
-  // );
-
+  /*
+  runApp(
+    DevicePreview(
+      enabled: !kReleaseMode, // Ensures it's disabled in release mode
+      builder: (context) => const MyApp(), // Wrap your app
+    ),
+  );
+  */
   
   runApp(const MyApp());
 }
