@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:device_preview/device_preview.dart';
-import 'package:test2/screens/home_screen.dart'; // Make sure this path is correct for your project
+import 'package:slang_that_thang/screens/home_screen.dart'; // Corrected path for your project
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
