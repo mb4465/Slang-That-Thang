@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:test2/data/globals.dart'; // Ensure this path is correct for globals.dart
+import 'package:slang_that_thang/data/globals.dart'; // Corrected path
 
 // HomeScreen import is no longer needed here as the tutorial button is moved
 // import 'home_screen.dart'; // This line is removed
