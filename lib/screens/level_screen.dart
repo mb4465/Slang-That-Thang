@@ -4,9 +4,9 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:slang_that_thang/data/terms_data.dart'; // Corrected path
-import 'package:slang_that_thang/data/globals.dart'; // Corrected path
-import 'package:slang_that_thang/widgets/flip_card_widget.dart'; // Corrected path
+import '../data/terms_data.dart'; // Corrected path
+import '../data/globals.dart'; // Corrected path
+import '../widgets/flip_card_widget.dart'; // Corrected path
 
 // Helper class for card history
 class CardHistoryItem {
