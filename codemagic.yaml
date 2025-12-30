@@ -1,6 +1,41 @@
 workflows:
   ios-build:
-    name: iOS Build
+    name: iOS App Store Build
     environment:
-      ios:
-        build_format: ipa
+      groups:
+        - app_store_credentials # Ensure you have this group or your specific signing group configured in Codemagic UI
+      vars:
+        XCODE_WORKSPACE: "ios/Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Set up keychain and provisioning profiles
+        script: |
+          xcode-project use-profiles
+
+      - name: Install dependencies and clean cache
+        script: |
+          flutter clean
+          flutter pub get
+          cd ios
+          # Remove existing Pods to ensure fresh install with new settings
+          rm -rf Pods
+          rm -rf Podfile.lock
+          pod install --repo-update
+          cd ..
+
+      - name: Build iOS Release (IPA)
+        script: |
+          # The critical fix: Using --release and pointing to the export options
+          flutter build ipa --release --export-options-plist /Users/builder/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - *.crash
+    publishing:
+      email:
+        recipients:
+          - your_email@example.com # Optional: Update with your email
