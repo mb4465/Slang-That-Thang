@@ -16,7 +16,7 @@ import 'game_button.dart';
 import 'home_screen.dart'; // Added import for HomeScreen
 
 const _kRemoveAdsProductId = 'remove_ads_premium';
-const String _kGooglePlayReviewCouponCode = "REVIEWACCESS2025";
+// const String _kGooglePlayReviewCouponCode = "REVIEWACCESS2025"; // Coupon code removed as per user request.
 
 enum MenuTutorialStep {
   none,
@@ -86,7 +86,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   bool _purchasePending = false;
   bool _loading = true;
   String? _errorMessage;
-  final TextEditingController _couponController = TextEditingController();
+  // final TextEditingController _couponController = TextEditingController(); // Coupon controller commented out
 
   bool _isLoadingMenuTutorialStatus = true;
   MenuTutorialStep _currentMenuTutorialStep = MenuTutorialStep.none;
@@ -107,6 +107,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   final GlobalKey _aboutKey = GlobalKey();
   final GlobalKey _stackKey = GlobalKey();
   final GlobalKey _backArrowKey = GlobalKey();
+  final GlobalKey _restoreKey = GlobalKey(); // Added key for restore button
 
   // Tutorial hint texts
   final Map<MenuTutorialStep, String> tutorialTexts = {
@@ -282,7 +283,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   void dispose() {
     _buttonPressController.dispose();
     _sub.cancel();
-    _couponController.dispose();
+    // _couponController.dispose(); // Coupon controller dispose commented out
     _menuTutorialAnimationController?.dispose();
     _audioPlayer.dispose();
     super.dispose();
@@ -374,115 +375,151 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     setState(() => _purchasePending = true);
     _iap.buyNonConsumable(purchaseParam: PurchaseParam(productDetails: pd));
   }
-
-  Widget _buildDialogGameButton({ required String text, required VoidCallback? onPressed}) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final double buttonWidth = min(screenWidth * 0.65, 260.0);
-    const double buttonHeight = 48.0;
-    final double buttonFontSize = max(14.0, buttonHeight * 0.32);
-    return Opacity(
-      opacity: onPressed == null ? 0.5 : 1.0,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: GameButton(text: text, width: buttonWidth, height: buttonHeight, onPressed: onPressed, isBold: true, fontSize: buttonFontSize),
-      ),
-    );
+  
+  // New method to handle direct purchase flow
+  Future<void> _handleDirectPurchase() async {
+    await _playStandardClickSound();
+    _initiateInAppPurchase();
   }
 
-  Future<void> _showCouponInputDialog() async {
+  // Method to restore purchases
+  Future<void> _restorePurchases() async {
+    if (_purchasePending) return;
+
+    await _playStandardClickSound();
     if (!mounted) return;
-    _couponController.clear();
-    final screenWidth = MediaQuery.of(context).size.width;
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Center(child: Text('Enter Coupon Code', style: TextStyle(fontSize: max(18.0, screenWidth * 0.055), fontWeight: FontWeight.bold))),
-          contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 0),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: _couponController, decoration: const InputDecoration(hintText: "Coupon Code", border: OutlineInputBorder()), autofocus: true),
-                const SizedBox(height: 20),
-                _buildDialogGameButton(text: 'Submit', onPressed: () async {
-                  await _playStandardClickSound(); // Sound for submit button
-                  final enteredCode = _couponController.text.trim();
-                  Navigator.of(dialogContext).pop();
-                  if (enteredCode == _kGooglePlayReviewCouponCode) {
-                    await setAdsRemoved(true);
-                    if (!mounted) return;
-                    setState(() => _adsRemoved = true);
-                    _showSuccessDialog("Coupon applied! Ads removed. You may need to restart.");
-                  } else {
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid coupon code.')));
-                  }
-                },
-                ),
-              ],
-            ),
-          ),
-          actions: <Widget>[TextButton(child: Text('Cancel', style: TextStyle(color: Theme.of(context).primaryColor)), onPressed: () async {
-            await _playStandardClickSound(); // Sound for cancel
-            Navigator.of(dialogContext).pop();
-          })],
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-        );
-      },
-    );
+
+    if (!_storeAvailable) {
+      setState(() => _errorMessage = "Cannot restore purchases: Store not available.");
+      return;
+    }
+
+    setState(() {
+      _purchasePending = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Calling restorePurchases will trigger updates on the purchase stream,
+      // which are handled by _onPurchaseUpdates (including setting _adsRemoved and resetting _purchasePending).
+      await _iap.restorePurchases();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = "Failed to initiate restore: $e";
+        _purchasePending = false;
+      });
+    }
   }
 
-  Future<void> _showRemoveAdsOptionsDialog() async {
-    await _playStandardClickSound(); // Sound for opening this dialog
-    if (!mounted) return;
-    final productDetailsForDialog = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
-    final screenWidth = MediaQuery.of(context).size.width;
-    String payButtonText;
-    bool canPay = false;
-    if (_purchasePending) payButtonText = 'Processing...';
-    else if (!_storeAvailable) payButtonText = 'Pay (Store Unavailable)';
-    else if (_loading && productDetailsForDialog == null) payButtonText = 'Pay (Loading Store...)';
-    else if (productDetailsForDialog == null) payButtonText = 'Pay (Item Unavailable)';
-    else { payButtonText = 'Pay ${productDetailsForDialog.price}'; canPay = true; }
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Center(child: Text('Remove Ads', style: TextStyle(fontSize: max(18.0, screenWidth * 0.06), fontWeight: FontWeight.bold))),
-          contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 0),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                _buildDialogGameButton(text: 'Enter Coupon Code', onPressed: () async {
-                  await _playStandardClickSound(); // Sound for button
-                  Navigator.of(dialogContext).pop(); _showCouponInputDialog();
-                }),
-                _buildDialogGameButton(text: payButtonText, onPressed: canPay ? () async {
-                  await _playStandardClickSound(); // Sound for button
-                  Navigator.of(dialogContext).pop(); _initiateInAppPurchase();
-                } : null),
-              ],
-            ),
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: <Widget>[
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: TextButton(child: Text('Cancel', style: TextStyle(fontSize: max(14.0, screenWidth * 0.04), color: Theme.of(context).hintColor)),
-                  onPressed: () async {
-                    await _playStandardClickSound(); // Sound for cancel
-                    Navigator.of(dialogContext).pop();
-                  }),
-            ),
-          ],
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-        );
-      },
-    );
-  }
+//  Widget _buildDialogGameButton({ required String text, required VoidCallback? onPressed}) {
+//    final screenWidth = MediaQuery.of(context).size.width;
+//    final double buttonWidth = min(screenWidth * 0.65, 260.0);
+//    const double buttonHeight = 48.0;
+//    final double buttonFontSize = max(14.0, buttonHeight * 0.32);
+//    return Opacity(
+//      opacity: onPressed == null ? 0.5 : 1.0,
+//      child: Padding(
+//        padding: const EdgeInsets.symmetric(vertical: 8.0),
+//        child: GameButton(text: text, width: buttonWidth, height: buttonHeight, onPressed: onPressed, isBold: true, fontSize: buttonFontSize),
+//      ),
+//    );
+//  }
+
+//  Future<void> _showCouponInputDialog() async {
+//    if (!mounted) return;
+//    _couponController.clear();
+//    final screenWidth = MediaQuery.of(context).size.width;
+//    showDialog(
+//      context: context,
+//      builder: (BuildContext dialogContext) {
+//        return AlertDialog(
+//          title: Center(child: Text('Enter Coupon Code', style: TextStyle(fontSize: max(18.0, screenWidth * 0.055), fontWeight: FontWeight.bold))),
+//          contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 0),
+//          content: SingleChildScrollView(
+//            child: Column(
+//              mainAxisSize: MainAxisSize.min,
+//              children: [
+//                TextField(controller: _couponController, decoration: const InputDecoration(hintText: "Coupon Code", border: OutlineInputBorder()), autofocus: true),
+//                const SizedBox(height: 20),
+//                _buildDialogGameButton(text: 'Submit', onPressed: () async {
+//                  await _playStandardClickSound(); // Sound for submit button
+//                  final enteredCode = _couponController.text.trim();
+//                  Navigator.of(dialogContext).pop();
+//                  if (enteredCode == _kGooglePlayReviewCouponCode) {
+//                    await setAdsRemoved(true);
+//                    if (!mounted) return;
+//                    setState(() => _adsRemoved = true);
+//                    _showSuccessDialog("Coupon applied! Ads removed. You may need to restart.");
+//                  } else {
+//                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid coupon code.')));
+//                  }
+//                },
+//                ),
+//              ],
+//            ),
+//          ),
+//          actions: <Widget>[TextButton(child: Text('Cancel', style: TextStyle(color: Theme.of(context).primaryColor)), onPressed: () async {
+//            await _playStandardClickSound(); // Sound for cancel
+//            Navigator.of(dialogContext).pop();
+//          })],
+//          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+//        );
+//      },
+//    );
+//  }
+
+//  Future<void> _showRemoveAdsOptionsDialog() async {
+//    await _playStandardClickSound(); // Sound for opening this dialog
+//    if (!mounted) return;
+//    final productDetailsForDialog = _products.firstWhereOrNull((p) => p.id == _kRemoveAdsProductId);
+//    final screenWidth = MediaQuery.of(context).size.width;
+//    String payButtonText;
+//    bool canPay = false;
+//    if (_purchasePending) payButtonText = 'Processing...';
+//    else if (!_storeAvailable) payButtonText = 'Pay (Store Unavailable)';
+//    else if (_loading && productDetailsForDialog == null) payButtonText = 'Pay (Loading Store...)';
+//    else if (productDetailsForDialog == null) payButtonText = 'Pay (Item Unavailable)';
+//    else { payButtonText = 'Pay ${productDetailsForDialog.price}'; canPay = true; }
+//    showDialog(
+//      context: context,
+//      barrierDismissible: true,
+//      builder: (BuildContext dialogContext) {
+//        return AlertDialog(
+//          title: Center(child: Text('Remove Ads', style: TextStyle(fontSize: max(18.0, screenWidth * 0.06), fontWeight: FontWeight.bold))),
+//          contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 0),
+//          content: SingleChildScrollView(
+//            child: Column(
+//              mainAxisSize: MainAxisSize.min,
+//              crossAxisAlignment: CrossAxisAlignment.center,
+//              children: <Widget>[
+//                _buildDialogGameButton(text: 'Enter Coupon Code', onPressed: () async {
+//                  await _playStandardClickSound(); // Sound for button
+//                  Navigator.of(dialogContext).pop(); _showCouponInputDialog();
+//                }),
+//                _buildDialogGameButton(text: payButtonText, onPressed: canPay ? () async {
+//                  await _playStandardClickSound(); // Sound for button
+//                  Navigator.of(dialogContext).pop(); _initiateInAppPurchase();
+//                } : null),
+//              ],
+//            ),
+//          ),
+//          actionsAlignment: MainAxisAlignment.center,
+//          actions: <Widget>[
+//            Padding(
+//              padding: const EdgeInsets.only(bottom: 8.0),
+//              child: TextButton(child: Text('Cancel', style: TextStyle(fontSize: max(14.0, screenWidth * 0.04), color: Theme.of(context).hintColor)),
+//                  onPressed: () async {
+//                    await _playStandardClickSound(); // Sound for cancel
+//                    Navigator.of(dialogContext).pop();
+//                  }),
+//            ),
+//          ],
+//          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+//        );
+//      },
+//    );
+//  }
 
   void _navigateTo(int index, Widget screen) async {
     if (_buttonPressController.isAnimating || _selectedButtonIndex != null ||
@@ -534,7 +571,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     }
   }
 
-  Widget _buildButton(int index, String text, VoidCallback onTap, {bool disabled = false, GlobalKey? key}) {
+  Widget _buildButton(int index, String text, VoidCallback? onTap, {bool disabled = false, GlobalKey? key}) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     const double maxButtonWidth = 400.0;
@@ -584,7 +621,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
         _advanceMenuTutorial();
       };
     } else {
-      finalOnPressed = onTap; // Standard action, associated sound is played within onTap (e.g., _navigateTo)
+      finalOnPressed = onTap; // onTap is now VoidCallback?
     }
 
     return Opacity(
@@ -915,14 +952,26 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                     _adsRemoved
                         ? 'Ads Removed!'
                         : (_purchasePending ? 'Remove Ads (Processing...)' : 'Remove Ads ($priceLabel)'),
-                    _adsRemoved ? () {} : _showRemoveAdsOptionsDialog,
+                    _adsRemoved ? () {} : () => _handleDirectPurchase(), // Wrapped in lambda
                     disabled: _adsRemoved || _purchasePending || (!_storeAvailable && !_loading) ||
                         (_storeAvailable && _loading && removeAdsProduct == null) ||
                         (_storeAvailable && !_loading && removeAdsProduct == null),
                     key: _removeAdsKey,
                   ),
                   SizedBox(height: buttonVerticalPadding),
-                  _buildButton(5, 'About', () => _navigateTo(5, const AboutScreen()), key: _aboutKey),
+                  _buildButton(
+                    5,
+                    _purchasePending && !_adsRemoved
+                        ? 'Restore (Processing...)'
+                        : 'Restore Purchases',
+                    _adsRemoved || _purchasePending || (!_storeAvailable && !_loading)
+                        ? null // Disable if already removed, pending, or store unavailable/loading
+                        : () => _restorePurchases(), // Wrapped in lambda
+                    disabled: _adsRemoved || _purchasePending || (!_storeAvailable && !_loading),
+                    key: _restoreKey,
+                  ),
+                  SizedBox(height: buttonVerticalPadding),
+                  _buildButton(6, 'About', () => _navigateTo(6, const AboutScreen()), key: _aboutKey),
 
                   if (_errorMessage != null)
                     Padding(
